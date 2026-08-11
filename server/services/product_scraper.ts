@@ -1,7 +1,7 @@
 import _ from "lodash"
 import { STEP_STATUS } from "../lib/status"
 import { PRODUCT_SOURCE, productService } from "../lib/products"
-import { scrapeProduct } from "../lib/product_import"
+import { scrapeProduct } from "../lib/scraper"
 
 const check = async () => {
   const inProgress = await productService.list({
