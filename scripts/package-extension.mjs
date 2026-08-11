@@ -1,0 +1,186 @@
+import { spawnSync } from "node:child_process"
+import fs from "node:fs"
+import os from "node:os"
+import path from "node:path"
+import { fileURLToPath } from "node:url"
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+const ROOT = path.join(__dirname, "..")
+const EXT_NAME = "autobom_skp"
+const SRC = path.join(ROOT, EXT_NAME)
+const RBZ_PATH = path.join(ROOT, `${EXT_NAME}.rbz`)
+
+const LOADER_RB = `# frozen_string_literal: true
+
+require "sketchup.rb"
+
+require File.join(__dir__, "autobom_skp", "browser_dialog")
+
+module AutobomModelBrowser
+  PLUGIN_NAME = "Autobom"
+  DEFAULT_API_BASE = "http://127.0.0.1:3847"
+
+  unless file_loaded?(__FILE__)
+    menu = UI.menu("Plugins")
+    menu.add_item(PLUGIN_NAME) { BrowserDialog.show }
+
+    toolbar = UI::Toolbar.new(PLUGIN_NAME)
+
+    cmd = UI::Command.new(PLUGIN_NAME) { BrowserDialog.show }
+    cmd.tooltip = PLUGIN_NAME
+    cmd.status_bar_text = "Browse Autobom — import catalog GLB or SKP models"
+
+    icons_dir = File.join(__dir__, "autobom_skp", "icons")
+    small_icon = File.join(icons_dir, "browser_small.png")
+    large_icon = File.join(icons_dir, "browser_large.png")
+
+    cmd.small_icon = small_icon
+    cmd.large_icon = large_icon
+
+    toolbar.add_item(cmd)
+
+    tb_visible = defined?(UI::Toolbar::TB_VISIBLE) ? UI::Toolbar::TB_VISIBLE : 1
+    if toolbar.get_last_state == tb_visible
+      toolbar.restore
+    else
+      toolbar.hide
+    end
+
+    file_loaded(__FILE__)
+  end
+end
+`
+
+const readEnvUrl = () => {
+  const envPath = path.join(ROOT, ".env")
+  if (!fs.existsSync(envPath)) {
+    console.error(`Missing ${envPath}`)
+    console.error("Copy .env.example to .env and set AUTOBOM_HTML_DIALOG_URL, then retry.")
+    process.exit(1)
+  }
+  const lines = fs.readFileSync(envPath, "utf8").split(/\r?\n/)
+  for (const line of lines) {
+    const trimmed = line.trim()
+    if (!trimmed || trimmed.startsWith("#")) continue
+    const eq = trimmed.indexOf("=")
+    if (eq === -1) continue
+    const key = trimmed.slice(0, eq).trim()
+    if (key !== "AUTOBOM_HTML_DIALOG_URL") continue
+    let value = trimmed.slice(eq + 1).trim()
+    if (
+      (value.startsWith('"') && value.endsWith('"'))
+      || (value.startsWith("'") && value.endsWith("'"))
+    ) {
+      value = value.slice(1, -1)
+    }
+    return value
+  }
+  return ""
+}
+
+const copyDir = (from, to) => {
+  fs.mkdirSync(to, { recursive: true })
+  for (const entry of fs.readdirSync(from, { withFileTypes: true })) {
+    const srcPath = path.join(from, entry.name)
+    const destPath = path.join(to, entry.name)
+    if (entry.isDirectory()) copyDir(srcPath, destPath)
+    else fs.copyFileSync(srcPath, destPath)
+  }
+}
+
+const createZip = (buildDir, outputPath) => {
+  if (process.platform === "win32") {
+    const zipPath = `${outputPath}.zip`
+    const items = [
+      path.join(buildDir, `${EXT_NAME}.rb`),
+      path.join(buildDir, EXT_NAME)
+    ]
+    const ps = [
+      "Compress-Archive",
+      `-Path ${items.map((p) => `'${p.replace(/'/g, "''")}'`).join(",")}`,
+      `-DestinationPath '${zipPath.replace(/'/g, "''")}'`,
+      "-Force"
+    ].join(" ")
+    const result = spawnSync(
+      "powershell",
+      ["-NoProfile", "-NonInteractive", "-Command", ps],
+      { stdio: "inherit" }
+    )
+    if (result.status !== 0) process.exit(result.status ?? 1)
+    fs.renameSync(zipPath, outputPath)
+    return
+  }
+
+  const zip = spawnSync(
+    "zip",
+    ["-r", outputPath, `${EXT_NAME}.rb`, `${EXT_NAME}/`, "-x", "*.DS_Store", "-x", "*__MACOSX*"],
+    { cwd: buildDir, stdio: "inherit" }
+  )
+  if (zip.status !== 0) process.exit(zip.status ?? 1)
+}
+
+const listZip = (rbzPath) => {
+  if (process.platform === "win32") {
+    const ps = `Add-Type -AssemblyName System.IO.Compression.FileSystem; [System.IO.Compression.ZipFile]::OpenRead('${rbzPath.replace(/'/g, "''")}').Entries | ForEach-Object { $_.FullName }`
+    spawnSync("powershell", ["-NoProfile", "-Command", ps], { stdio: "inherit" })
+    return
+  }
+  spawnSync("unzip", ["-l", rbzPath], { stdio: "inherit" })
+}
+
+const main = () => {
+  if (!fs.existsSync(SRC)) {
+    console.error(`Missing extension source: ${SRC}`)
+    process.exit(1)
+  }
+
+  const dialogUrl = readEnvUrl()
+  if (!dialogUrl) {
+    console.error("AUTOBOM_HTML_DIALOG_URL must be set in .env")
+    process.exit(1)
+  }
+  if (!/^https?:\/\//i.test(dialogUrl)) {
+    console.error("AUTOBOM_HTML_DIALOG_URL must start with http:// or https://")
+    process.exit(1)
+  }
+
+  const buildDir = fs.mkdtempSync(path.join(os.tmpdir(), "autobom-rbz-"))
+  try {
+    console.log(`Packaging ${EXT_NAME}...`)
+    fs.writeFileSync(path.join(buildDir, `${EXT_NAME}.rb`), LOADER_RB)
+
+    const extDir = path.join(buildDir, EXT_NAME)
+    fs.mkdirSync(extDir, { recursive: true })
+    for (const file of ["browser_dialog.rb", "http_client.rb", "zip_extract.rb"]) {
+      fs.copyFileSync(path.join(SRC, file), path.join(extDir, file))
+    }
+    copyDir(path.join(SRC, "icons"), path.join(extDir, "icons"))
+
+    const uiConfig = `# frozen_string_literal: true
+# Generated by scripts/package-extension.mjs — rebuild the .rbz to change this URL.
+
+module AutobomModelBrowser
+  PACKAGED_HTML_DIALOG_URL = ${JSON.stringify(dialogUrl)}.freeze
+end
+`
+    fs.writeFileSync(path.join(extDir, "ui_config.rb"), uiConfig)
+    console.log(`Packaging HtmlDialog URL: ${dialogUrl}`)
+
+    if (fs.existsSync(RBZ_PATH)) fs.unlinkSync(RBZ_PATH)
+    console.log(`Creating ${EXT_NAME}.rbz...`)
+    createZip(buildDir, RBZ_PATH)
+
+    const size = fs.statSync(RBZ_PATH).size
+    console.log("")
+    console.log(`Packaged successfully: ${EXT_NAME}.rbz (${size} bytes)`)
+    console.log("")
+    console.log("Contents:")
+    listZip(RBZ_PATH)
+    console.log("")
+    console.log(`Install in SketchUp: Extension Manager → Install Extension → ${EXT_NAME}.rbz`)
+  } finally {
+    fs.rmSync(buildDir, { recursive: true, force: true })
+  }
+}
+
+main()

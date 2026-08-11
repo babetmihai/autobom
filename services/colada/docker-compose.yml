@@ -1,0 +1,13 @@
+services:
+  colada:
+    build: .
+    image: autobom/colada
+    container_name: colada
+    ports:
+      - "5002:5002"
+    volumes:
+      - ./api/service.py:/app/service.py:ro
+      - ./api/convert.py:/app/convert.py:ro
+    environment:
+      - PORT=5002
+    restart: unless-stopped

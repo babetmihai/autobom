@@ -1,0 +1,40 @@
+---
+description: Autobom project conventions
+alwaysApply: true
+---
+
+# Autobom
+
+Vite/React/Redux UI (`autobom_ui`), Express cron server (`server`), SketchUp extension (`autobom_skp`). Target: quality GLB on RTX 4090 Mobile 16GB (`TRELLIS_LOW_VRAM=true`). Generation settings only in `server/lib/trellis.ts` `PROCESS_PARAMS`. Store `models/{productId}.glb`; product fields `modelGlbUrl`, `hasGlb`.
+
+## Style
+
+- No semicolons, no trailing commas, double quotes, 2-space indent, max 160 cols
+- Domain/third-party types: prefix `T` (`TProduct`); use native types for primitives (`string`, `number`, `Record<string, …>`)
+- Prefer lodash (`import _ from "lodash"`) at call site over one-off helpers or native equivalents
+- No one-off named helpers/wrappers/path-builders — extract only when reused 2+ times
+- Destructure with `|| {}` / `|| []`; avoid `?.` for field reads (optional calls OK)
+- No nested ternaries; name booleans. JSX: `&&` not ternary. Imperative: `if`, not `&&`
+- No heuristics for “best” content — use AI analyzers (`imageUrl` from `image_analyzer`)
+- No defensive code: no try/catch unless recovering; no fallbacks for required data/env
+- Rem for custom sizes (often `0.75rem`). Minimal diffs
+
+## UI (`autobom_ui`)
+
+- Imports from `src/`: `lib/`, `pages/`, `components/`. `actions`/`store` from `lib/store/index.js`
+- `React.useState` etc. — never destructure built-ins from `"react"` (third-party hooks unprefixed)
+- Redux only: `actions.get/set/update/unset`; `useSelector(() => selectX())`; fetch then select
+- Domain modules: selectors → fetchers → mutators → mappers. Fetchers write store only (no side effects)
+- `createServices` stays generic; domain logic in `lib/{domain}.js`. Loaders: `setLoader`/`clearLoader`
+- No nested components, no single-use hooks/JSX vars — Redux + lib instead. Tailwind + `cn()`
+- Persist via `PERSISTENT_PATHS` / selectors — never localforage directly
+
+## Server
+
+- `lib/` clients; `services/` export `{ run }`; single ticker in `index.ts`. ESM + `tsx`. Env from repo-root `.env`
+- Arrow `const` helpers; nest single-use inside parent. One try/catch per recoverable step
+- `cleanDeep`, `object-hash`, `dayjs`, `STATUSES` from `lib/index.ts`
+
+## SketchUp (`autobom_skp`)
+
+Download GLB from Firebase; native `definitions.import` only — no mesh processing in Ruby

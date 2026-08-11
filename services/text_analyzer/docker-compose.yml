@@ -1,0 +1,31 @@
+services:
+  ollama:
+    image: ollama/ollama
+    container_name: text-analyzer-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    restart: unless-stopped
+
+  text_analyzer:
+    build:
+      context: .
+    image: autobom/text-analyzer
+    container_name: text-analyzer
+    ports:
+      - "5003:5003"
+    volumes:
+      - ./api/service.py:/app/service.py:ro
+      - ./api/analyze.py:/app/analyze.py:ro
+      - ./api/extract.py:/app/extract.py:ro
+    environment:
+      - PORT=5003
+      - OLLAMA_URL=http://ollama:11434
+      - OLLAMA_MODEL=llama3.2:3b
+    depends_on:
+      - ollama
+    restart: unless-stopped
+
+volumes:
+  ollama_data:

@@ -1,0 +1,14 @@
+services:
+  image_analyzer:
+    build:
+      context: .
+    image: autobom/image-analyzer
+    container_name: image-analyzer
+    ports:
+      - "5001:5001"
+    volumes:
+      - ./api/service.py:/app/service.py:ro
+      - ./api/analyze.py:/app/analyze.py:ro
+    environment:
+      - PORT=5001
+    restart: unless-stopped

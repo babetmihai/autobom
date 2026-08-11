@@ -1,0 +1,38 @@
+services:
+  trellis:
+    build: .
+    image: autobom/trellis2-processor
+    container_name: trellis
+    runtime: nvidia
+    shm_size: "8gb"
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./output:/content/TRELLIS.2/output
+      - ./cache/models:/content/cache
+      - ./entrypoint.sh:/entrypoint.sh:ro
+      - ./api/service.py:/content/TRELLIS.2/service.py:ro
+      - ./api/process.py:/content/TRELLIS.2/process.py:ro
+      - ./api/initialize.py:/content/TRELLIS.2/initialize.py:ro
+      - ./api/status.py:/content/TRELLIS.2/status.py:ro
+    environment:
+      - ATTN_BACKEND=flash_attn
+      - SPARSE_ATTN_BACKEND=flash_attn
+      - NVIDIA_VISIBLE_DEVICES=all
+      - CUDA_HOME=/usr/local/cuda-12.8
+      - PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True,max_split_size_mb:512
+      - PYTHONWARNINGS=ignore::SyntaxWarning
+      - HF_HOME=/content/cache
+      - TRELLIS_MODEL_ID=camenduru/TRELLIS.2-4B
+      - TRELLIS_LOW_VRAM=true
+      - CATALOG_TARGET_MAX_INCHES=48
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    user: "0:0"
+    command: ["/bin/sh", "/entrypoint.sh"]
+    restart: unless-stopped

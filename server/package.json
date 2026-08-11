@@ -1,0 +1,37 @@
+{
+  "name": "server",
+  "version": "1.0.0",
+  "description": "Ticker services for model conversion and scene analysis",
+  "type": "module",
+  "main": "index.ts",
+  "scripts": {
+    "start": "tsx index.ts",
+    "dev": "tsx watch index.ts",
+    "typecheck": "tsc",
+    "products:update-status": "tsx scripts/update_status.ts",
+    "products:reindex": "tsx scripts/reindex_products_from_images.ts",
+    "products:migrate-v6": "tsx scripts/migrate_v6_products.ts",
+    "embeddings:migrate-vector": "tsx scripts/migrate_embeddings_vector.ts",
+    "storage:fix-url": "tsx scripts/fix_storage_urls.ts",
+    "reset:failed": "tsx scripts/reset_failed.ts"
+  },
+  "dependencies": {
+    "@gltf-transform/core": "^4.3.0",
+    "axios": "^1.13.2",
+    "clean-deep": "^3.4.0",
+    "dayjs": "^1.11.21",
+    "dotenv": "^16.4.5",
+    "express": "^5.2.1",
+    "firebase-admin": "^13.10.0",
+    "form-data": "^4.0.5",
+    "lodash": "^4.18.1",
+    "node-cron": "^4.2.1",
+    "object-hash": "^3.0.0",
+    "tsx": "^4.19.4",
+    "uuid": "^14.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.0",
+    "typescript": "^5.8.3"
+  }
+}

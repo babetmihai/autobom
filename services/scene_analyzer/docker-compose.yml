@@ -1,0 +1,14 @@
+services:
+  scene_analyzer:
+    build:
+      context: .
+    image: autobom/scene-analyzer
+    container_name: scene-analyzer
+    ports:
+      - "5004:5004"
+    volumes:
+      - ./api/service.py:/app/service.py:ro
+      - ./api/analyze.py:/app/analyze.py:ro
+    environment:
+      - PORT=5004
+    restart: unless-stopped

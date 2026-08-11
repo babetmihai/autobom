@@ -1,0 +1,14 @@
+{
+  "projects": {
+    "default": "autobom-5dcad"
+  },
+  "targets": {
+    "autobom-5dcad": {
+      "hosting": {
+        "autobom": [
+          "autobom-5dcad"
+        ]
+      }
+    }
+  }
+}

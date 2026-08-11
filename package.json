@@ -1,0 +1,28 @@
+{
+  "name": "autobom",
+  "private": true,
+  "scripts": {
+    "server": "npm run dev --prefix server",
+    "server:up": "node scripts/start-server.mjs",
+    "reset:failed": "npm run reset:failed --prefix server",
+    "install:all": "npm install && npm install --prefix autobom_ui && npm install --prefix server",
+    "dev": "npm run dev --prefix autobom_ui",
+    "build": "npm run build --prefix autobom_ui",
+    "deploy:hosting": "npm run build:hosting --prefix autobom_ui && firebase deploy --only hosting:autobom",
+    "image-analyzer:docker": "docker compose -f services/image_analyzer/docker-compose.yml up -d --build",
+    "text-analyzer:docker": "docker compose -f services/text_analyzer/docker-compose.yml up -d --build",
+    "scene-analyzer:docker": "docker compose -f services/scene_analyzer/docker-compose.yml up -d --build",
+    "embedding-analyzer:docker": "docker compose -f services/embedding_analyzer/docker-compose.yml up -d --build",
+    "trellis:docker": "docker compose -f services/trellis/docker-compose.yml up -d --build",
+    "colada:docker": "docker compose -f services/colada/docker-compose.yml up -d --build",
+    "package:extension": "node scripts/package-extension.mjs"
+  },
+  "devDependencies": {
+    "firebase-tools": "^15.19.1"
+  },
+  "dependencies": {
+    "clsx": "^2.1.1",
+    "express": "^5.2.1",
+    "tailwind-merge": "^3.5.0"
+  }
+}

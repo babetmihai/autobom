@@ -1,0 +1,14 @@
+services:
+  embedding_analyzer:
+    build:
+      context: .
+    image: autobom/embedding-analyzer
+    container_name: embedding-analyzer
+    ports:
+      - "5005:5005"
+    volumes:
+      - ./api/service.py:/app/service.py:ro
+      - ./api/analyze.py:/app/analyze.py:ro
+    environment:
+      - PORT=5005
+    restart: unless-stopped

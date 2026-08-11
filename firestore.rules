@@ -1,0 +1,37 @@
+rules_version = '2'
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null
+    }
+
+    function isOwner() {
+      return isSignedIn() && resource.data.createdBy == request.auth.uid
+    }
+
+    function isCreatingAsOwner() {
+      return isSignedIn() && request.resource.data.createdBy == request.auth.uid
+    }
+
+    function isKeepingOwner() {
+      return isOwner() && request.resource.data.createdBy == resource.data.createdBy
+    }
+
+    match /versions/{version}/products/{productId} {
+      allow read: if isOwner()
+      allow create: if isCreatingAsOwner()
+      allow update: if isKeepingOwner()
+    }
+
+    match /versions/{version}/scenes/{sceneId} {
+      allow read: if isOwner()
+      allow create: if isCreatingAsOwner()
+      allow update: if isKeepingOwner()
+    }
+
+    match /versions/{version}/state/{stateId} {
+      allow read, write: if false
+    }
+  }
+}
