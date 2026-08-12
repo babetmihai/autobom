@@ -45,6 +45,7 @@ export function AppNav({ collapsed = false }) {
             <ActionIcon
               component={RouterNavLink}
               to={to}
+              exact={true}
               variant={isActive(path) ? "light" : "subtle"}
               color={isActive(path) ? "brand" : "gray"}
               size="lg"
@@ -102,6 +103,7 @@ export function AppNav({ collapsed = false }) {
           key={to}
           component={RouterNavLink}
           to={to}
+          exact={true}
           label={label}
           leftSection={<Icon size={18} stroke={1.75} />}
           active={isActive(path)}
