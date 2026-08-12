@@ -1,12 +1,12 @@
 import { useSelector } from "react-redux"
 import { HashRouter, Switch, Route } from "react-router-dom"
+import { Center, Loader } from "@mantine/core"
 import CatalogPage from "./pages/CatalogPage.jsx"
 import ProductPage from "./pages/ProductPage.jsx"
 import SceneAnalyzerPage from "./pages/SceneAnalyzerPage.jsx"
 import ListPage from "./pages/ListPage.jsx"
 import LoginPage from "./pages/LoginPage.jsx"
 import { selectAuthReady, selectAuthUid } from "./lib/auth.js"
-import { LoadingSpinnerIcon } from "./components/Icons.jsx"
 import ModalDispatcher from "./components/ModalDispatcher.jsx"
 
 
@@ -16,9 +16,9 @@ export default function App() {
 
   if (!ready) {
     return (
-      <div className="flex h-screen items-center justify-center bg-neutral-100 text-neutral-600">
-        <LoadingSpinnerIcon className="h-6 w-6 animate-spin" />
-      </div>
+      <Center h="100vh" bg="gray.1">
+        <Loader color="brand" />
+      </Center>
     )
   }
 

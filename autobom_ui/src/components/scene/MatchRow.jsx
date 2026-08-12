@@ -44,8 +44,8 @@ export default function MatchRow({
   return (
     <li
       className={cn(
-        "flex items-center gap-2 rounded-md border border-neutral-100 bg-neutral-50 p-2",
-        "transition-colors hover:border-neutral-200 hover:bg-white"
+        "flex items-center gap-2 rounded-md border border-gray-100 bg-gray-50 p-2",
+        "transition-colors hover:border-gray-200 hover:bg-white"
       )}
     >
       <div
@@ -69,13 +69,13 @@ export default function MatchRow({
           />
         }
         {!thumbUrl &&
-          <div className="h-10 w-10 shrink-0 rounded bg-neutral-200" />
+          <div className="h-10 w-10 shrink-0 rounded bg-gray-200" />
         }
         <div className="min-w-0 flex-1">
-          <p className="m-0 truncate text-sm font-medium text-neutral-800">{title}</p>
-          <p className="m-0 text-xs text-neutral-500">{scorePercent}% match</p>
+          <p className="m-0 truncate text-sm font-medium text-gray-800">{title}</p>
+          <p className="m-0 text-xs text-gray-500">{scorePercent}% match</p>
           {priceDisplay &&
-            <p className="m-0 mt-0.5 text-xs font-semibold text-brand">{priceDisplay}</p>
+            <p className="m-0 mt-0.5 text-xs font-semibold text-brand-500">{priceDisplay}</p>
           }
           {inSketchup && listCount > 0 &&
             <p className="m-0 mt-0.5 text-xs font-medium text-green-800">In list: {listCount}</p>

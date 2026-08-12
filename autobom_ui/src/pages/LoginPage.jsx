@@ -1,7 +1,17 @@
 import React from "react"
+import {
+  Anchor,
+  Button,
+  Center,
+  Paper,
+  PasswordInput,
+  Stack,
+  Text,
+  TextInput,
+  Title
+} from "@mantine/core"
 import { signInWithEmail, signUpWithEmail } from "../lib/auth.js"
 import { useLoader } from "../lib/loaders.js"
-import BannerDispatcher from "../lib/banner/BannerDispatcher.jsx"
 
 
 export default function LoginPage() {
@@ -24,54 +34,61 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-neutral-100 font-sans text-base leading-snug text-neutral-800">
-      <main className="flex min-h-0 flex-1 flex-col items-center justify-center px-4 py-4 sm:px-6 sm:py-6">
-        <div className="w-full max-w-sm">
-          <h1 className="m-0 text-lg font-semibold text-neutral-800">Autobom</h1>
-          <p className="m-0 mt-1 text-sm text-neutral-600">
-            {isSignIn ? "Sign in to your catalogue" : "Create an account"}
-          </p>
-          <form className="mt-4 flex flex-col gap-3" onSubmit={onSubmit}>
-            <label className="flex flex-col gap-1 text-sm text-neutral-700">
-              Email
-              <input
-                className="rounded-md border border-neutral-200 bg-white px-3 py-2 font-[inherit] text-sm"
-                type="email"
-                autoComplete="email"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                required
-                disabled={busy}
-              />
-            </label>
-            <label className="flex flex-col gap-1 text-sm text-neutral-700">
-              Password
-              <input
-                className="rounded-md border border-neutral-200 bg-white px-3 py-2 font-[inherit] text-sm"
-                type="password"
-                autoComplete={isSignIn ? "current-password" : "new-password"}
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                required
-                minLength={6}
-                disabled={busy}
-              />
-            </label>
-            <button className="ab-btn-brand mt-1" type="submit" disabled={busy}>
+    <Center h="100vh" bg="gray.1" px="md">
+      <Paper
+        w="100%"
+        maw={24 * 16}
+        p={0}
+        bg="transparent"
+        shadow="none"
+      >
+        <Title order={1} size="h3">
+          Autobom
+        </Title>
+        <Text size="sm" c="dimmed" mt={4}>
+          {isSignIn ? "Sign in to your catalogue" : "Create an account"}
+        </Text>
+        <form className="mt-4" onSubmit={onSubmit}>
+          <Stack gap="sm">
+            <TextInput
+              label="Email"
+              type="email"
+              autoComplete="email"
+              value={email}
+              onChange={(event) => setEmail(event.currentTarget.value)}
+              required
+              disabled={busy}
+            />
+            <PasswordInput
+              label="Password"
+              autoComplete={isSignIn ? "current-password" : "new-password"}
+              value={password}
+              onChange={(event) => setPassword(event.currentTarget.value)}
+              required
+              minLength={6}
+              disabled={busy}
+            />
+            <Button
+              type="submit"
+              color="brand"
+              loading={busy}
+              mt={4}
+            >
               {(busy && "Please wait…") || (isSignIn && "Sign in") || "Create account"}
-            </button>
-          </form>
-          <button
-            type="button"
-            className="mt-3 border-0 bg-transparent p-0 font-[inherit] text-sm text-brand hover:text-brand-dark"
-            disabled={busy}
-            onClick={() => setMode(isSignIn ? "signUp" : "signIn")}
-          >
-            {isSignIn ? "Need an account? Sign up" : "Already have an account? Sign in"}
-          </button>
-        </div>
-      </main>
-      <BannerDispatcher />
-    </div>
+            </Button>
+          </Stack>
+        </form>
+        <Anchor
+          component="button"
+          type="button"
+          size="sm"
+          mt="sm"
+          disabled={busy}
+          onClick={() => setMode(isSignIn ? "signUp" : "signIn")}
+        >
+          {isSignIn ? "Need an account? Sign up" : "Already have an account? Sign in"}
+        </Anchor>
+      </Paper>
+    </Center>
   )
 }

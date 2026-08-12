@@ -1,11 +1,12 @@
-import { cn } from "../lib/index.js"
+import { Button, Group } from "@mantine/core"
+import { IconExternalLink } from "@tabler/icons-react"
 import {
   addOrImportProduct,
   importProductBundle,
   importProductGlb
 } from "../lib/products.js"
-import { ExternalLinkIcon, LoadingSpinnerIcon } from "./Icons.jsx"
 import { useLoader } from "../lib/loaders.js"
+import { cn } from "../lib/index.js"
 
 export default function ProductPageActions({
   view,
@@ -42,55 +43,53 @@ export default function ProductPageActions({
   })()
 
   return (
-    <div className={cn("flex flex-wrap gap-2", className)}>
+    <Group gap="xs" className={cn("flex-wrap", className)}>
       {inSketchup &&
-        <button
-          type="button"
+        <Button
+          color="brand"
           title={primaryTitle}
           disabled={!canPrimary || importing}
-          className="ab-btn-brand"
+          loading={importingPrimary}
           onClick={() => void addOrImportProduct(view, { inSketchup, glbSupported })}
         >
-          {importingPrimary && <LoadingSpinnerIcon className="h-4 w-4" />}
           {primaryLabel}
-        </button>
+        </Button>
       }
       {!inSketchup && glbUrl &&
-        <button
-          type="button"
+        <Button
+          variant="default"
           title="Download GLB model"
           disabled={importing}
-          className="ab-btn-neutral"
+          loading={importingGlb}
           onClick={() => importProductGlb(view)}
         >
-          {importingGlb && <LoadingSpinnerIcon className="h-4 w-4" />}
           Download GLB
-        </button>
+        </Button>
       }
       {!inSketchup && bundleUrl &&
-        <button
-          type="button"
+        <Button
+          variant="default"
           title="Download COLLADA bundle (zip)"
           disabled={importing}
-          className="ab-btn-neutral"
+          loading={importingDae}
           onClick={() => importProductBundle(view)}
         >
-          {importingDae && <LoadingSpinnerIcon className="h-4 w-4" />}
           Download COLLADA bundle
-        </button>
+        </Button>
       }
       {view.productUrl &&
-        <a
+        <Button
+          component="a"
           href={view.productUrl}
           target="_blank"
           rel="noopener noreferrer"
+          variant="default"
           title="View on store"
-          className="ab-btn-toolbar text-neutral-700"
+          leftSection={<IconExternalLink size={16} stroke={1.75} />}
         >
-          <ExternalLinkIcon className="h-4 w-4 shrink-0" />
           View on store
-        </a>
+        </Button>
       }
-    </div>
+    </Group>
   )
 }

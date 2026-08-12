@@ -30,8 +30,8 @@ export default function CropCard({
     <article
       ref={cardRef}
       className={cn(
-        "cursor-pointer overflow-hidden rounded-lg border border-neutral-200 bg-white transition-shadow",
-        selected && "ring-2 ring-brand"
+        "cursor-pointer overflow-hidden rounded-lg border border-gray-200 bg-white transition-shadow",
+        selected && "ring-2 ring-brand-500"
       )}
       onClick={() => onSelect?.(crop.id)}
     >
@@ -44,15 +44,15 @@ export default function CropCard({
           />
         }
         {!crop.url &&
-          <div className="aspect-square h-[7.8rem] w-[7.8rem] shrink-0 bg-neutral-100 sm:h-[9.1rem] sm:w-[9.1rem]" />
+          <div className="aspect-square h-[7.8rem] w-[7.8rem] shrink-0 bg-gray-100 sm:h-[9.1rem] sm:w-[9.1rem]" />
         }
         <div className="min-w-0 flex-1 p-3">
           <div className="mb-3">
-            <p className="m-0 text-sm font-medium capitalize text-neutral-800">
+            <p className="m-0 text-sm font-medium capitalize text-gray-800">
               {crop.label || "Furniture"}
             </p>
             {confidencePercent != null && (
-              <p className="m-0 text-xs text-neutral-500">
+              <p className="m-0 text-xs text-gray-500">
                 Detection {confidencePercent}%
               </p>
             )}
@@ -74,11 +74,11 @@ export default function CropCard({
           )}
 
           {sorted.length === 0 && sceneMatchingComplete(sceneStatus) && (
-            <p className="m-0 text-xs text-neutral-500">No catalog matches found</p>
+            <p className="m-0 text-xs text-gray-500">No catalog matches found</p>
           )}
 
           {sorted.length === 0 && sceneMatchingProcessing(sceneStatus) && (
-            <p className="m-0 text-xs text-neutral-500">Finding matches...</p>
+            <p className="m-0 text-xs text-gray-500">Finding matches...</p>
           )}
         </div>
       </div>

@@ -2,9 +2,9 @@ import React from "react"
 import { Link } from "react-router-dom"
 import { useSelector } from "react-redux"
 import _ from "lodash"
-import { AppHeader } from "../components/AppHeader"
-import { AppShell } from "../components/AppShell.jsx"
-import { FileTextIcon, LoadingSpinnerIcon } from "../components/Icons.jsx"
+import { Anchor, Button, Group, Loader, Paper, Text } from "@mantine/core"
+import { IconFileText } from "@tabler/icons-react"
+import { AppShell, PageHeader } from "../components/AppShell.jsx"
 import { selectListQuantities } from "../lib/list.js"
 import { exportBOM } from "../lib/bom.js"
 import {
@@ -65,33 +65,42 @@ export default function ListPage() {
   const isLoading = loadingIds.length > 0
 
   return (
-    <AppShell header={<AppHeader />}>
-      <div className="mb-4 flex flex-wrap items-center gap-2">
-        <p className="m-0 flex-1 text-sm text-neutral-600">
-          Quantities reflect models placed in your SketchUp file.
-        </p>
-        <button
-          type="button"
-          className="ab-btn-toolbar"
+    <AppShell
+      header={
+        <PageHeader
+          title="List"
+          description="Quantities reflect models placed in your SketchUp file."
+        />
+      }
+    >
+      <Group mb="md" justify="flex-end">
+        <Button
+          variant="default"
+          leftSection={<IconFileText size={16} stroke={1.75} />}
           onClick={() => exportBOM({ quantities: listQuantities, list: listForBom })}
           disabled={isEmpty}
         >
-          <FileTextIcon /> Export BOM
-        </button>
-      </div>
+          Export BOM
+        </Button>
+      </Group>
 
       {isEmpty &&
-        <div className="rounded-lg border border-dashed border-neutral-300 bg-white px-4 py-10 text-center">
-          <p className="m-0 text-sm font-medium text-neutral-700">Your list is empty</p>
-          <p className="m-0 mt-2 text-sm text-neutral-500">
+        <Paper
+          withBorder
+          p="xl"
+          radius="md"
+          className="border-dashed text-center"
+        >
+          <Text fw={500} size="sm">Your list is empty</Text>
+          <Text size="sm" c="dimmed" mt="xs">
             Import catalog models into SketchUp to add them here.
-          </p>
-        </div>
+          </Text>
+        </Paper>
       }
 
       {!isEmpty &&
-        <div className="overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.08)]">
-          <ul className="m-0 list-none divide-y divide-neutral-100 p-0">
+        <Paper withBorder radius="md" className="overflow-hidden shadow-sm">
+          <ul className="m-0 list-none divide-y divide-gray-100 p-0">
             {lines.map(({ id, view, qty, lineTotal }) => {
               const { price, currency, imageUrl, title, name, sku } = view || {}
               const loading = loadingIds.includes(id)
@@ -103,39 +112,50 @@ export default function ListPage() {
               return (
                 <li key={id} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center">
                   <div className="flex min-w-0 flex-1 gap-3">
-                    <div className="h-16 w-16 shrink-0 overflow-hidden rounded-md bg-neutral-100">
+                    <div className="h-16 w-16 shrink-0 overflow-hidden rounded-md bg-gray-100">
                       {imageUrl &&
                         <img src={imageUrl} alt="" className="h-full w-full object-cover" />
                       }
                       {!imageUrl &&
-                        <div className="flex h-full w-full items-center justify-center text-xs text-neutral-400">—</div>
+                        <div className="flex h-full w-full items-center justify-center text-xs text-gray-400">—</div>
                       }
                     </div>
                     <div className="min-w-0 flex-1">
                       {loading && !view &&
-                        <p className="m-0 text-sm text-neutral-500">Loading…</p>
+                        <Text size="sm" c="dimmed">Loading…</Text>
                       }
                       {view &&
                         <>
-                          <Link
+                          <Anchor
+                            component={Link}
                             to={{
                               pathname: `/product/${id}`,
                               state: { from: "/list", fromLabel: "List" }
                             }}
-                            className="block truncate text-sm font-semibold text-neutral-800 hover:text-brand-dark"
+                            className="block truncate text-sm font-semibold text-gray-800"
                           >
                             {title || name || id}
-                          </Link>
+                          </Anchor>
                           {sku &&
-                            <p className="m-0 mt-0.5 text-xs tabular-nums text-neutral-400">{sku}</p>
+                            <Text
+                              size="xs"
+                              c="dimmed"
+                              mt={2}
+                              className="tabular-nums"
+                            >{sku}</Text>
                           }
                           {priceDisplay &&
-                            <p className="m-0 mt-1 text-sm font-medium text-brand">{priceDisplay}</p>
+                            <Text
+                              size="sm"
+                              fw={500}
+                              c="brand.5"
+                              mt={4}
+                            >{priceDisplay}</Text>
                           }
                         </>
                       }
                       {!view && !loading &&
-                        <p className="m-0 truncate text-sm text-neutral-600">{id}</p>
+                        <Text size="sm" className="truncate text-gray-600">{id}</Text>
                       }
                     </div>
                   </div>
@@ -143,7 +163,7 @@ export default function ListPage() {
                   <div className="flex shrink-0 items-center justify-between gap-3 sm:justify-end">
                     <span className="min-w-[3rem] text-center text-sm font-semibold tabular-nums">{qty}</span>
                     {lineTotalDisplay &&
-                      <span className="min-w-[5rem] text-right text-sm font-semibold tabular-nums text-neutral-800">
+                      <span className="min-w-[5rem] text-right text-sm font-semibold tabular-nums text-gray-800">
                         {lineTotalDisplay}
                       </span>
                     }
@@ -154,21 +174,26 @@ export default function ListPage() {
           </ul>
 
           {hasPricedLines &&
-            <div className="flex items-center justify-end gap-3 border-t border-neutral-100 bg-neutral-50 px-4 py-3">
-              <span className="text-sm font-medium text-neutral-600">Grand total</span>
-              <span className="text-base font-bold tabular-nums text-brand">
+            <div className="flex items-center justify-end gap-3 border-t border-gray-100 bg-gray-50 px-4 py-3">
+              <Text size="sm" fw={500} c="dimmed">Grand total</Text>
+              <Text
+                size="md"
+                fw={700}
+                c="brand.5"
+                className="tabular-nums"
+              >
                 {formatPrice(grandTotal, lines.find(({ view }) => view?.currency)?.view?.currency)}
-              </span>
+              </Text>
             </div>
           }
-        </div>
+        </Paper>
       }
 
       {isLoading &&
-        <p className="mt-3 flex items-center gap-2 text-sm text-neutral-500">
-          <LoadingSpinnerIcon className="h-4 w-4" />
-          Loading product details…
-        </p>
+        <Group gap="xs" mt="sm">
+          <Loader size="sm" />
+          <Text size="sm" c="dimmed">Loading product details…</Text>
+        </Group>
       }
     </AppShell>
   )

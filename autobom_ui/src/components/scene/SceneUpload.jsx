@@ -1,9 +1,10 @@
 import React from "react"
 import { useHistory } from "react-router-dom"
+import { Loader, Text } from "@mantine/core"
+import { IconUpload } from "@tabler/icons-react"
 import { cn } from "../../lib/index.js"
 import { uploadScene } from "../../lib/scenes.js"
 import { useLoader } from "../../lib/loaders.js"
-import { LoadingSpinnerIcon, UploadIcon } from "../Icons.jsx"
 
 
 export default function SceneUpload() {
@@ -32,8 +33,8 @@ export default function SceneUpload() {
           "flex w-full min-h-[9rem] cursor-pointer flex-col items-center justify-center",
           "rounded-lg border-2 border-dashed bg-white text-center transition-colors",
           "px-4 py-6 sm:min-h-[11rem] sm:px-6 sm:py-8",
-          dragging && "border-brand bg-brand/5",
-          !dragging && "border-neutral-300 hover:border-brand/50"
+          dragging && "border-brand-500 bg-brand-50",
+          !dragging && "border-gray-300 hover:border-brand-500/50"
         )}
         onClick={() => inputRef.current?.click()}
         onDragOver={(event) => {
@@ -51,18 +52,18 @@ export default function SceneUpload() {
         }}
       >
         {uploading &&
-          <div className="flex max-w-full flex-wrap items-center justify-center gap-2 px-2 text-neutral-600">
-            <LoadingSpinnerIcon className="h-5 w-5 shrink-0 animate-spin text-brand" />
-            <span className="text-sm sm:text-base">Uploading scene...</span>
+          <div className="flex max-w-full flex-wrap items-center justify-center gap-2 px-2 text-gray-600">
+            <Loader size="sm" color="brand" />
+            <Text size="sm">Uploading scene...</Text>
           </div>
         }
         {!uploading &&
           <>
-            <UploadIcon className="mb-2 h-8 w-8 shrink-0 text-brand sm:h-10 sm:w-10" />
-            <p className="m-0 max-w-xs px-2 text-sm font-medium text-neutral-700 sm:max-w-md sm:text-base">
+            <IconUpload size={40} stroke={1.5} className="mb-2 text-brand-500" />
+            <Text fw={500} size="sm" className="max-w-xs px-2 sm:max-w-md sm:text-base">
               Drop a room photo here or tap to browse
-            </p>
-            <p className="m-0 mt-1 text-xs text-neutral-500 sm:text-sm">JPEG, PNG, or WebP</p>
+            </Text>
+            <Text size="xs" c="dimmed" mt={4}>JPEG, PNG, or WebP</Text>
           </>
         }
       </div>

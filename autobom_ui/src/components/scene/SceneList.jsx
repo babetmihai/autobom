@@ -1,6 +1,8 @@
 import React from "react"
 import { Link } from "react-router-dom"
 import { useSelector } from "react-redux"
+import { Badge, Button, Center, Group, Loader, Paper, Text, Title } from "@mantine/core"
+import { IconClock, IconRefresh } from "@tabler/icons-react"
 import {
   fetchScenes,
   formatSceneRelativeDate,
@@ -14,17 +16,16 @@ import {
   selectScenesListMeta
 } from "../../lib/scenes.js"
 import { useLoader } from "../../lib/loaders.js"
-import { ClockIcon, LoadingSpinnerIcon, RefreshIcon } from "../Icons.jsx"
 import { cn } from "../../lib/index.js"
 
 const sceneThumbSizeClass = "h-[5.2rem] w-[5.2rem]"
 const sceneRowContentClass = "flex min-w-0 flex-1 flex-col justify-start gap-1 p-3"
 
-const statusBadgeClass = {
-  complete: "border-green-300 bg-green-50 text-green-800",
-  processing: "border-brand/30 bg-brand/10 text-brand-dark",
-  failed: "border-red-300 bg-red-50 text-red-800",
-  pending: "border-neutral-200 bg-neutral-50 text-neutral-600"
+const statusColor = {
+  complete: "green",
+  processing: "brand",
+  failed: "red",
+  pending: "gray"
 }
 
 const skeletonRows = [0, 1, 2]
@@ -46,47 +47,48 @@ export default function SceneList() {
 
   return (
     <section className="mb-6" aria-labelledby="scene-list-heading">
-      <div className="mb-3 flex items-center justify-between gap-2">
-        <div className="flex min-w-0 items-center gap-2">
-          <h2 id="scene-list-heading" className="m-0 text-sm font-semibold text-neutral-700">
+      <Group justify="space-between" gap="xs" mb="sm">
+        <Group gap="xs" className="min-w-0">
+          <Title
+            order={3}
+            size="sm"
+            id="scene-list-heading"
+            className="m-0 text-gray-700"
+          >
             Your scenes
-          </h2>
+          </Title>
           {showList &&
-            <span className="rounded-full bg-neutral-200 px-2 py-0.5 text-xs font-medium tabular-nums text-neutral-600">
+            <Badge color="gray" variant="light" size="sm">
               {scenes.length}
-            </span>
+            </Badge>
           }
-        </div>
+        </Group>
         {showList &&
-          <button
-            type="button"
-            className="ab-btn-toolbar shrink-0"
+          <Button
+            variant="default"
+            size="compact-sm"
+            className="shrink-0"
             onClick={() => fetchScenes({ reset: true })}
             disabled={loading}
             aria-label="Refresh scenes"
+            leftSection={loading ? <Loader size={14} /> : <IconRefresh size={16} stroke={1.75} />}
           >
-            {loading &&
-              <LoadingSpinnerIcon className="h-4 w-4 animate-spin" />
-            }
-            {!loading &&
-              <RefreshIcon />
-            }
             Refresh
-          </button>
+          </Button>
         }
-      </div>
+      </Group>
 
       {initialLoading &&
         <ul className="m-0 flex list-none flex-col gap-2 p-0" aria-hidden="true">
           {skeletonRows.map((row) => (
             <li
               key={row}
-              className="flex h-[5.2rem] animate-pulse overflow-hidden rounded-lg border border-neutral-200 bg-white"
+              className="flex h-[5.2rem] animate-pulse overflow-hidden rounded-lg border border-gray-200 bg-white"
             >
-              <div className={cn("shrink-0 bg-neutral-200", sceneThumbSizeClass)} />
+              <div className={cn("shrink-0 bg-gray-200", sceneThumbSizeClass)} />
               <div className={sceneRowContentClass}>
-                <div className="h-3.5 w-28 rounded bg-neutral-200" />
-                <div className="h-3 w-40 rounded bg-neutral-100" />
+                <div className="h-3.5 w-28 rounded bg-gray-200" />
+                <div className="h-3 w-40 rounded bg-gray-100" />
               </div>
             </li>
           ))}
@@ -94,12 +96,17 @@ export default function SceneList() {
       }
 
       {listReady && listEmpty &&
-        <div className="rounded-lg border border-dashed border-neutral-300 bg-white px-4 py-8 text-center">
-          <p className="m-0 text-sm font-medium text-neutral-700">No scenes yet</p>
-          <p className="m-0 mt-1 text-xs text-neutral-500">
+        <Paper
+          withBorder
+          p="xl"
+          radius="md"
+          className="border-dashed text-center"
+        >
+          <Text fw={500} size="sm">No scenes yet</Text>
+          <Text size="xs" c="dimmed" mt={4}>
             Upload a room photo above to detect furniture and match catalog items.
-          </p>
-        </div>
+          </Text>
+        </Paper>
       }
 
       {showList &&
@@ -126,13 +133,13 @@ export default function SceneList() {
                   to={`/scene-analyzer/${scene.id}`}
                   aria-label={`Open ${sceneName}, ${statusLabel}`}
                   className={cn(
-                    "flex h-[5.2rem] overflow-hidden rounded-lg border border-neutral-200 bg-white",
+                    "flex h-[5.2rem] overflow-hidden rounded-lg border border-gray-200 bg-white",
                     "transition-[border-color,box-shadow,background-color]",
-                    "hover:border-brand/40 hover:bg-neutral-50/80 hover:shadow-sm",
-                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/30 focus-visible:ring-offset-2"
+                    "hover:border-brand-500/40 hover:bg-gray-50/80 hover:shadow-sm",
+                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/30 focus-visible:ring-offset-2"
                   )}
                 >
-                  <div className={cn("aspect-square shrink-0 bg-neutral-100", sceneThumbSizeClass)}>
+                  <div className={cn("aspect-square shrink-0 bg-gray-100", sceneThumbSizeClass)}>
                     {scene.url &&
                       <img
                         src={scene.url}
@@ -144,29 +151,26 @@ export default function SceneList() {
                   </div>
                   <div className={sceneRowContentClass}>
                     <div className="flex items-start justify-between gap-3">
-                      <span className="min-w-0 truncate text-sm font-medium text-neutral-800">
+                      <span className="min-w-0 truncate text-sm font-medium text-gray-800">
                         {sceneName}
                       </span>
-                      <span
-                        className={cn(
-                          "flex shrink-0 items-center gap-1 rounded-md border px-1.5 py-0.5",
-                          "text-[0.6875rem] font-medium leading-none",
-                          statusBadgeClass[tone]
-                        )}
+                      <Badge
+                        color={statusColor[tone] || "gray"}
+                        variant="light"
+                        size="sm"
+                        leftSection={
+                          (queued && <IconClock size={12} stroke={1.75} />) ||
+                          (processing && <Loader size={12} />) ||
+                          undefined
+                        }
                       >
-                        {queued &&
-                          <ClockIcon className="h-3 w-3" />
-                        }
-                        {processing &&
-                          <LoadingSpinnerIcon className="h-3 w-3 animate-spin" />
-                        }
                         {statusLabel}
-                      </span>
+                      </Badge>
                     </div>
-                    <p className="m-0 truncate text-xs text-neutral-500">
+                    <Text size="xs" c="dimmed" className="m-0 truncate">
                       {metaLabel}
                       {relativeDate && ` · ${relativeDate}`}
-                    </p>
+                    </Text>
                   </div>
                 </Link>
               </li>
@@ -176,17 +180,11 @@ export default function SceneList() {
       }
 
       {showList && hasMore &&
-        <div className="mt-4 flex justify-center">
-          <button
-            type="button"
-            className="ab-btn-toolbar"
-            onClick={() => loadMoreScenes()}
-            disabled={loadingMore}
-          >
-            {loadingMore && "Loading..."}
-            {!loadingMore && "Load more"}
-          </button>
-        </div>
+        <Center mt="md">
+          <Button variant="default" onClick={() => loadMoreScenes()} loading={loadingMore}>
+            Load more
+          </Button>
+        </Center>
       }
     </section>
   )

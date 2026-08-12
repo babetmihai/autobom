@@ -1,17 +1,17 @@
+import { Button } from "@mantine/core"
+import { IconExternalLink } from "@tabler/icons-react"
 import { showModal } from "../lib/modals.js"
-import { ExternalLinkIcon } from "./Icons.jsx"
 import ProductUrlImportModal from "./ProductUrlImportModal.jsx"
 
 
 export default function ProductUrlImport() {
   return (
-    <button
-      type="button"
-      className="ab-btn-toolbar"
+    <Button
+      variant="default"
+      leftSection={<IconExternalLink size={16} stroke={1.75} />}
       onClick={() => showModal(ProductUrlImportModal)}
     >
-      <ExternalLinkIcon />
       From URL
-    </button>
+    </Button>
   )
 }

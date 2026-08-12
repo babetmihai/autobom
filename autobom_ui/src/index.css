@@ -1,6 +1,20 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwind-preset-mantine";
+@import "@mantine/notifications/styles.layer.css";
+
+/* Keep Tailwind brand-* in sync with Mantine theme (src/theme.js). */
+@theme {
+  --color-brand-50: #e6f7fc;
+  --color-brand-100: #c2ebf7;
+  --color-brand-200: #9adcf0;
+  --color-brand-300: #6fcbe8;
+  --color-brand-400: #3fb8df;
+  --color-brand-500: #0696d7;
+  --color-brand-600: #0580b8;
+  --color-brand-700: #046a99;
+  --color-brand-800: #03557a;
+  --color-brand-900: #023f5c;
+  --color-brand-950: #012a3d;
+}
 
 @layer base {
   html,
@@ -8,35 +22,5 @@
   #root {
     height: 100%;
     overflow: hidden;
-  }
-}
-
-/*
-  Tailwind v4 targets Safari 16.4+ / Chrome 111+ and emits @property, @layer properties,
-  translate:/scale: shorthands, etc. SketchUp 2021 HtmlDialog uses an older engine — use v3
-  so production CSS stays compatible.
-*/
-
-@layer components {
-  .ab-btn-neutral {
-    @apply rounded-md border border-neutral-200 bg-white px-3 py-2 font-[inherit] text-sm hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-55;
-  }
-  .ab-btn-toolbar {
-    @apply inline-flex items-center gap-1.5 rounded-md border border-neutral-200 bg-white px-3 py-[0.375rem] font-[inherit] text-sm hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-55;
-  }
-  .ab-btn-brand {
-    @apply inline-flex items-center gap-1.5 rounded-md border border-brand bg-brand px-3 py-[0.375rem] font-[inherit] text-sm font-semibold text-white hover:border-brand-dark hover:bg-brand-dark hover:text-white disabled:cursor-not-allowed disabled:opacity-55;
-  }
-  .ab-nav-tabs {
-    @apply -ml-3 flex flex-wrap gap-y-0;
-  }
-  .ab-nav-tab {
-    @apply relative -mb-px inline-flex items-center border-b-2 border-transparent px-3 py-2.5 text-sm font-medium text-neutral-600 transition-colors hover:text-neutral-800;
-  }
-  .ab-nav-tab-active {
-    @apply border-brand text-brand-dark;
-  }
-  .ab-back-link {
-    @apply inline-flex items-center gap-1 text-sm font-medium text-brand transition-colors hover:text-brand-dark;
   }
 }

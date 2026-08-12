@@ -1,24 +1,14 @@
-import { cn } from "../lib/index.js"
+import { ActionIcon, Button, Group } from "@mantine/core"
+import { IconExternalLink, IconPencil } from "@tabler/icons-react"
 import {
   addOrImportProduct,
   importProductBundle,
   importProductGlb
 } from "../lib/products.js"
-import { ExternalLinkIcon, LoadingSpinnerIcon, PencilIcon } from "./Icons.jsx"
 import InsertButton from "./InsertButton.jsx"
 import { useLoader } from "../lib/loaders.js"
 import { showProductModal } from "./ProductModal.jsx"
-
-const btnBase = cn(
-  "inline-flex h-7 min-w-[2.25rem] shrink-0 items-center justify-center rounded px-1.5",
-  "font-[inherit] text-[0.625rem] font-semibold tracking-wide transition-colors disabled:cursor-not-allowed"
-)
-const btnLoading = "cursor-not-allowed border border-transparent bg-neutral-100 text-neutral-500 disabled:opacity-100"
-const btnSecondary = "border border-neutral-300 bg-white text-neutral-700 hover:bg-neutral-100 disabled:opacity-55"
-const iconBtn = cn(
-  "inline-flex h-7 w-7 shrink-0 items-center justify-center rounded",
-  "text-neutral-600 transition-colors hover:bg-neutral-200 hover:text-neutral-800"
-)
+import { cn } from "../lib/index.js"
 
 export default function ProductActions({
   view,
@@ -48,16 +38,16 @@ export default function ProductActions({
     return "No importable model"
   })()
 
-  const daeTitle = "Download COLLADA bundle (zip)"
-  const glbDownloadTitle = "Download GLB model"
-
   const stop = (event) => event.stopPropagation()
 
   return (
-    <div
+    <Group
+      gap={4}
+      justify="flex-end"
+      wrap="nowrap"
       className={cn(
-        "flex shrink-0 items-center justify-end gap-1",
-        !inline && "border-t border-neutral-100 bg-neutral-50 px-2 py-1.5",
+        "shrink-0",
+        !inline && "border-t border-gray-100 bg-gray-50 px-2 py-1.5",
         className
       )}
       onClick={stop}
@@ -74,60 +64,56 @@ export default function ProductActions({
         />
       }
       {!inSketchup && glbUrl &&
-        <button
-          type="button"
-          title={glbDownloadTitle}
-          className={cn(
-            btnBase,
-            importingGlb && btnLoading,
-            !importingGlb && btnSecondary
-          )}
-          onClick={() => importProductGlb(view)}
+        <Button
+          size="compact-xs"
+          variant="default"
+          title="Download GLB model"
+          loading={importingGlb}
           disabled={importing}
+          onClick={() => importProductGlb(view)}
         >
-          {importingGlb && <LoadingSpinnerIcon className="h-3 w-3" />}
-          {!importingGlb && "GLB"}
-        </button>
+          GLB
+        </Button>
       }
       {!inSketchup && bundleUrl &&
-        <button
-          type="button"
-          title={daeTitle}
-          className={cn(
-            btnBase,
-            importingDae && btnLoading,
-            !importingDae && btnSecondary
-          )}
-          onClick={() => importProductBundle(view)}
+        <Button
+          size="compact-xs"
+          variant="default"
+          title="Download COLLADA bundle (zip)"
+          loading={importingDae}
           disabled={importing}
+          onClick={() => importProductBundle(view)}
         >
-          {importingDae && <LoadingSpinnerIcon className="h-3 w-3" />}
-          {!importingDae && "DAE"}
-        </button>
+          DAE
+        </Button>
       }
-      <button
-        type="button"
+      <ActionIcon
+        variant="subtle"
+        color="gray"
+        size="sm"
         title="Edit product"
-        className={iconBtn}
         onClick={(event) => {
           stop(event)
           showProductModal({ productId })
         }}
       >
-        <PencilIcon className="h-3.5 w-3.5" />
-      </button>
+        <IconPencil size={14} stroke={1.75} />
+      </ActionIcon>
       {view.productUrl &&
-        <a
+        <ActionIcon
+          component="a"
           href={view.productUrl}
           target="_blank"
           rel="noopener noreferrer"
+          variant="subtle"
+          color="gray"
+          size="sm"
           title="View on store"
-          className={iconBtn}
           onClick={stop}
         >
-          <ExternalLinkIcon />
-        </a>
+          <IconExternalLink size={14} stroke={1.75} />
+        </ActionIcon>
       }
-    </div>
+    </Group>
   )
 }

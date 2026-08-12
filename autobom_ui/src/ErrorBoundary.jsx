@@ -1,10 +1,5 @@
 import { Component } from "react"
-
-const PRE_BLOCK_MSG =
-  "mb-3 overflow-x-auto whitespace-pre-wrap break-words rounded-md border border-red-200 bg-white p-3 font-mono text-xs"
-
-const PRE_BLOCK_STACK =
-  "mt-2 overflow-x-auto whitespace-pre-wrap rounded-md border border-red-200 bg-white p-3 font-mono text-[0.6875rem]"
+import { Alert, Button, Code, Text } from "@mantine/core"
 
 export class ErrorBoundary extends Component {
   constructor(props) {
@@ -34,42 +29,39 @@ export class ErrorBoundary extends Component {
     const stack = typeof error.stack === "string" ? error.stack : ""
 
     return (
-      <div
-        className="m-3 max-w-3xl rounded-lg border border-red-300 bg-red-50 p-4 text-[0.8125rem]"
+      <Alert
+        color="red"
+        m="md"
+        maw={48 * 16}
+        title="Something went wrong"
         role="alert"
       >
-        <h1 className="mb-2 mt-0 text-base font-semibold text-red-900">This panel hit a React error</h1>
-        <p className="mb-3 mt-0 text-neutral-600">
-          SketchUp 2021’s embedded browser is strict; Firebase and other libraries can fail here. Details
-          below.
-        </p>
-        <pre className={PRE_BLOCK_MSG}>
+        <Text size="sm" c="dimmed" mb="sm">
+          The app hit a React error. Details below.
+        </Text>
+        <Code block mb="sm">
           {error.message || String(error)}
-        </pre>
+        </Code>
         {stack &&
-          <details className="mb-3" open>
-            <summary className="cursor-pointer font-semibold text-neutral-700">Stack trace</summary>
-            <pre className={PRE_BLOCK_STACK}>
+          <details className="mb-3">
+            <summary className="cursor-pointer font-semibold text-gray-700">Stack trace</summary>
+            <Code block mt="xs" className="text-[0.6875rem]">
               {stack}
-            </pre>
+            </Code>
           </details>
         }
         {errorInfo?.componentStack &&
           <details className="mb-3">
-            <summary className="cursor-pointer font-semibold text-neutral-700">Component stack</summary>
-            <pre className={PRE_BLOCK_STACK}>
+            <summary className="cursor-pointer font-semibold text-gray-700">Component stack</summary>
+            <Code block mt="xs" className="text-[0.6875rem]">
               {errorInfo.componentStack}
-            </pre>
+            </Code>
           </details>
         }
-        <button
-          type="button"
-          className="ab-btn-neutral mt-1"
-          onClick={this.handleReload}
-        >
-          Reload panel
-        </button>
-      </div>
+        <Button variant="default" mt="xs" onClick={this.handleReload}>
+          Reload
+        </Button>
+      </Alert>
     )
   }
 }

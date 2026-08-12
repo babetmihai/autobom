@@ -1,6 +1,8 @@
 import React from "react"
 import { Link, useParams } from "react-router-dom"
 import { useSelector } from "react-redux"
+import { Anchor, Button, Group, Loader, Paper, Text, Title } from "@mantine/core"
+import { IconChevronLeft, IconClock, IconRefresh } from "@tabler/icons-react"
 import { SceneAnalyzerHeader } from "../components/SceneAnalyzerHeader"
 import { AppShell } from "../components/AppShell.jsx"
 import SceneUpload from "../components/scene/SceneUpload.jsx"
@@ -25,8 +27,6 @@ import {
 import { useImportListener } from "../lib/products.js"
 import { useTagListener } from "../lib/tags.js"
 import { useLoader } from "../lib/loaders.js"
-import { cn } from "../lib/index.js"
-import { ChevronLeftIcon, ClockIcon, LoadingSpinnerIcon, RefreshIcon } from "../components/Icons.jsx"
 import { glbNativeImport, isInSketchup, useSketchupEnvListener } from "../lib/sketchup.js"
 
 
@@ -83,59 +83,65 @@ export default function SceneAnalyzerPage() {
       <SceneUpload />
 
       {routeSceneId &&
-        <Link to="/scene-analyzer" className="ab-back-link mb-4">
-          <ChevronLeftIcon />
+        <Anchor
+          component={Link}
+          to="/scene-analyzer"
+          size="sm"
+          mb="md"
+          className="inline-flex items-center gap-1"
+        >
+          <IconChevronLeft size={16} stroke={1.75} />
           Scenes
-        </Link>
+        </Anchor>
       }
 
       {!sceneId && <SceneList />}
 
       {scene && <SceneNameField scene={scene} />}
 
-      {scene && (
-        <div className="mb-4 flex items-center gap-2 text-sm text-neutral-600">
+      {scene &&
+        <Group gap="xs" mb="md">
           {queued &&
-            <ClockIcon className="h-4 w-4 text-neutral-500" />
+            <IconClock size={16} stroke={1.75} className="text-gray-500" />
           }
           {processing &&
-            <LoadingSpinnerIcon className="h-4 w-4 animate-spin text-brand" />
+            <Loader size={16} color="brand" />
           }
-          <span className={cn(failed && "text-red-700")}>
+          <Text size="sm" c={failed ? "red.7" : "dimmed"}>
             {sceneStatusLabel(scene.status)}
-          </span>
+          </Text>
           {failed &&
-            <button
-              type="button"
-              className="ab-btn-toolbar text-neutral-700"
-              disabled={retrying}
+            <Button
+              variant="default"
+              size="compact-sm"
+              loading={retrying}
+              leftSection={!retrying && <IconRefresh size={16} stroke={1.75} />}
               onClick={() => void retryScene(scene)}
             >
-              {retrying &&
-                <LoadingSpinnerIcon className="h-4 w-4 animate-spin" />
-              }
-              {!retrying &&
-                <RefreshIcon />
-              }
               Retry
-            </button>
+            </Button>
           }
-        </div>
-      )}
+        </Group>
+      }
 
-      {scene && (
+      {scene &&
         <SceneViewer
           scene={scene}
           selectedCropId={selectedCropId}
           onSelectCrop={selectCropFromScene}
         />
-      )}
+      }
 
-      {hasCrops && (
+      {hasCrops &&
         <section>
-          <h2 className="mb-3 mt-0 text-sm font-semibold text-neutral-700">
+          <Title
+            order={3}
+            size="sm"
+            mb="sm"
+            className="text-gray-700"
+          >
             Detected furniture ({cropsWithMatches.length})
-          </h2>
+          </Title>
           <div className="flex flex-col gap-4">
             {cropsWithMatches.map(({ crop, matches }) => (
               <CropCard
@@ -157,21 +163,26 @@ export default function SceneAnalyzerPage() {
             ))}
           </div>
         </section>
-      )}
+      }
 
       {scene && !hasCrops && processing &&
-        <p className="m-0 text-sm text-neutral-500">
+        <Text size="sm" c="dimmed">
           Scanning the scene for furniture...
-        </p>
+        </Text>
       }
 
       {scene && !hasCrops && analysisComplete && !failed &&
-        <div className="rounded-lg border border-dashed border-neutral-300 bg-white px-4 py-8 text-center">
-          <p className="m-0 text-sm font-medium text-neutral-700">No furniture detected</p>
-          <p className="m-0 mt-1 text-xs text-neutral-500">
+        <Paper
+          withBorder
+          p="xl"
+          radius="md"
+          className="border-dashed text-center"
+        >
+          <Text fw={500} size="sm">No furniture detected</Text>
+          <Text size="xs" c="dimmed" mt={4}>
             Try a clearer room photo with visible furniture.
-          </p>
-        </div>
+          </Text>
+        </Paper>
       }
     </AppShell>
   )

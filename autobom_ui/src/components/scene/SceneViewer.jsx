@@ -27,8 +27,8 @@ export default function SceneViewer({ scene, selectedCropId, onSelectCrop }) {
 
   return (
     <section className="mb-6">
-      <h2 className="mb-3 mt-0 text-sm font-semibold text-neutral-700">Scene overview</h2>
-      <div className="flex w-full max-w-full justify-center overflow-hidden rounded-lg border border-neutral-200 bg-white">
+      <h2 className="mb-3 mt-0 text-sm font-semibold text-gray-700">Scene overview</h2>
+      <div className="flex w-full max-w-full justify-center overflow-hidden rounded-lg border border-gray-200 bg-white">
         <div className="relative max-w-full">
           <img
             ref={imgRef}
@@ -47,8 +47,8 @@ export default function SceneViewer({ scene, selectedCropId, onSelectCrop }) {
                 onClick={() => onSelectCrop?.(crop.id)}
                 className={cn(
                   "absolute border-2 transition-colors",
-                  active && "border-brand bg-brand/15",
-                  !active && "border-white/90 bg-white/10 hover:border-brand/70"
+                  active && "border-brand-500 bg-brand-500/15",
+                  !active && "border-white/90 bg-white/10 hover:border-brand-500/70"
                 )}
                 style={{
                   left: x * scaleX,

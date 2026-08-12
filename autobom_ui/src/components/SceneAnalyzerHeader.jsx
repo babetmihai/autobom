@@ -1,4 +1,4 @@
-import { PageHeader } from "./PageHeader.jsx"
+import { PageHeader } from "./AppShell.jsx"
 
 export function SceneAnalyzerHeader() {
   return (

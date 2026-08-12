@@ -2,45 +2,13 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <script>
-      (function () {
-        if (typeof globalThis === "undefined") {
-          window.globalThis = window;
-        }
-      })();
-    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />
     <title>Autobom</title>
   </head>
-  <body class="bg-neutral-100 antialiased">
-    <!-- Runs before ES modules — surfaces failures old SketchUp HtmlDialog swallows -->
-    <script>
-      (function () {
-        function show(msg) {
-          var el = document.getElementById("root");
-          if (!el) return;
-          el.className = "p-3 font-sans text-xs whitespace-pre-wrap text-red-900";
-          el.textContent = msg;
-        }
-        window.addEventListener("error", function (e) {
-          show(
-            "Script error:\n" +
-              (e && e.message ? e.message : "unknown") +
-              (e && e.filename ? "\n@" + e.filename + ":" + (e.lineno || "") : ""),
-          );
-        });
-        window.addEventListener("unhandledrejection", function (e) {
-          var r = e.reason;
-          show(
-            "Unhandled rejection:\n" +
-              (r && r.message ? r.message : r != null ? String(r) : "unknown"),
-          );
-        });
-      })();
-    </script>
+  <body class="bg-gray-100 antialiased">
     <div id="root"></div>
     <noscript>You need to enable JavaScript to run this app.</noscript>
     <script type="module" src="/src/main.jsx"></script>

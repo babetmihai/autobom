@@ -1,4 +1,4 @@
-import { PageHeader } from "./PageHeader.jsx"
+import { PageHeader } from "./AppShell.jsx"
 import { isInSketchup } from "../lib/sketchup.js"
 
 export function AppHeader() {
@@ -8,7 +8,7 @@ export function AppHeader() {
 
   return (
     <PageHeader
-      title="Autobom"
+      title="Product Catalog"
       description={description}
     />
   )
