@@ -30,6 +30,10 @@ service cloud.firestore {
       allow update: if isKeepingOwner()
     }
 
+    match /versions/{version}/meta/{docId} {
+      allow read, write: if isSignedIn()
+    }
+
     match /versions/{version}/state/{stateId} {
       allow read, write: if false
     }

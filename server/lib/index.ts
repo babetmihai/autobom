@@ -20,7 +20,9 @@ export const {
   FIREBASE_SERVICE_ACCOUNT,
   FIREBASE_CONFIG,
   SERVICES_ENABLED,
-  TICKER_INTERVAL_SECONDS
+  WAKE_CATCHUP_SECONDS,
+  MACHINE_ID,
+  LOCK_STALE_MS
 } = process.env as Record<string, string>
 
 export {

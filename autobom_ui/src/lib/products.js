@@ -9,7 +9,7 @@ import {
 } from "./index.js"
 import { setLoader, clearLoader } from "./loaders.js"
 import { createServices, getDocRef } from "./services.js"
-import { getFirestoreDb } from "./firebase.js"
+import { getFirestoreDb, wakeTicker } from "./firebase.js"
 import _ from "lodash"
 import { v7 as uuidv7 } from "uuid"
 import sketchup from "./sketchup.js"
@@ -285,6 +285,7 @@ export const retryProduct = async (product) => {
   if (retryingTrellis) patch.trellisRequestId = deleteField()
 
   await updateDoc(getDocRef("products", id), patch)
+  void wakeTicker()
 
   actions.update("products", (products = {}) => {
     const current = products[id] || { id }
@@ -370,6 +371,7 @@ export const createProduct = async (values) => {
 
   await setDoc(getDocRef("products", id), raw)
   applyProductSnapshot(id, raw)
+  void wakeTicker()
   showBanner("success", "Product created")
   return selectProduct(id)
 }
@@ -464,6 +466,7 @@ export const importProductFromUrl = async (url) => {
 
     await setDoc(getDocRef("products", id), raw)
     applyProductSnapshot(id, raw)
+    void wakeTicker()
     showBanner("success", "Product added — scraping in background")
     return id
   } catch (error) {

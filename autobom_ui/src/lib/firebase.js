@@ -1,6 +1,6 @@
 import { initializeApp } from "firebase/app"
 import { getAuth } from "firebase/auth"
-import { initializeFirestore, memoryLocalCache } from "firebase/firestore"
+import { doc, initializeFirestore, memoryLocalCache, setDoc } from "firebase/firestore"
 import { getStorage } from "firebase/storage"
 
 
@@ -68,4 +68,15 @@ export const getFirebaseStorage = () => {
   }
   storageInstance = getStorage(firebaseApp)
   return storageInstance
+}
+
+export const wakeTicker = async () => {
+  const db = getFirestoreDb()
+  const version = getFirestoreVersion()
+  if (!db || !version) return
+  try {
+    await setDoc(doc(db, "versions", version, "meta", "wake"), { at: Date.now() })
+  } catch (e) {
+    console.error("[Autobom] wakeTicker failed:", e)
+  }
 }

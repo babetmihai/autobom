@@ -2,32 +2,22 @@ import { uploadFile } from "../lib/storage"
 import { TRUE } from "../lib"
 import { STEP_STATUS } from "../lib/status"
 import trellis from "../lib/trellis"
-import _ from "lodash"
 import { getNull } from "../lib/services"
+import { claimNext, completeStep, failStep, findOwnProcessing } from "../lib/claim"
 import { productService } from "../lib/products"
+import { wake } from "../lib/wake"
 
 
-const check = async () => {
-  const products = await productService.list({
-    "status.trellis": STEP_STATUS.PROCESSING,
-    pageSize: 1
-  })
-  const item = _.first(products)
-  const { id } = item || {}
-  if (!item) return { status: null }
-  return { status: STEP_STATUS.PROCESSING, id }
-}
+const STEP = "trellis"
 
 const run = async () => {
   let productId
   try {
     console.log("----> Running Trellis converter")
 
-    const { status, id: processingId } = await check() || {}
-
-    if (status === STEP_STATUS.PROCESSING) {
-      const product = await productService.get(processingId)
-      const { id, name, trellisRequestId } = product || {}
+    const processing = await findOwnProcessing("products", STEP)
+    if (processing) {
+      const { id, name, trellisRequestId } = processing
       productId = id
 
       const trellisStatus = await trellis.status(trellisRequestId)
@@ -35,66 +25,72 @@ const run = async () => {
       if (trellisStatus === STEP_STATUS.COMPLETED) {
         const glbBytes = await trellis.result(trellisRequestId, "output.glb")
         const modelGlbUrl = await uploadFile(`models/${id}.glb`, glbBytes, "model/gltf-binary")
-        await productService.update(id, {
+        await completeStep("products", id, STEP, {
           modelGlbUrl,
           hasGlb: TRUE,
-          trellisRequestId,
-          "status.trellis": STEP_STATUS.COMPLETED
+          trellisRequestId
         })
         console.log("Product name:", name)
         console.log("Model GLB URL:", modelGlbUrl)
         console.log("----> Trellis conversion completed for product:", id)
-        return
+        return { status: null }
       }
 
       if (trellisStatus === STEP_STATUS.FAILED) {
-        await productService.update(id, {
-          "status.trellis": STEP_STATUS.FAILED,
+        await failStep("products", id, STEP, {
           trellisRequestId: getNull()
         })
         console.log("----> Trellis conversion failed for product:", id)
-        return
+        return { status: null }
       }
 
       console.log("----> Trellis conversion in progress...")
-      return
+      return { status: STEP_STATUS.PROCESSING, id }
     }
 
     console.log("----> Starting Trellis model conversion")
-    const products = await productService.list({
-      "status.trellis": STEP_STATUS.PENDING,
-      "status.image": STEP_STATUS.COMPLETED,
-      "status.text": STEP_STATUS.COMPLETED,
+    const product = await claimNext({
+      collection: "products",
+      step: STEP,
+      listQuery: {
+        "status.image": STEP_STATUS.COMPLETED,
+        "status.text": STEP_STATUS.COMPLETED
+      },
       pageSize: 1
     })
 
-    const product = _.first(products)
     if (!product) {
       console.log("No products ready for Trellis conversion")
-      return
+      return { status: null }
     }
 
     const { id, imageUrl, dimensions } = product
     productId = id
+    if (!id) return { status: null }
 
-    const { width = 0, height = 0, depth = 0 } = dimensions || {}
+    const dims = (dimensions || {}) as {
+      width?: number
+      height?: number
+      depth?: number
+    }
+    const { width = 0, height = 0, depth = 0 } = dims
     const maxCm = Math.max(width, height, depth)
     const targetMaxInches = maxCm > 0 ? maxCm / 2.54 : undefined
-    const startedRequestId = await trellis.start(imageUrl, { targetMaxInches })
-    await productService.update(id, {
-      trellisRequestId: startedRequestId,
-      "status.trellis": STEP_STATUS.PROCESSING
-    })
+    const startedRequestId = await trellis.start(String(imageUrl || ""), { targetMaxInches })
+    await productService.update(id, { trellisRequestId: startedRequestId })
+    await wake()
     console.log("----> Trellis model conversion started for product:", id)
+    return { status: STEP_STATUS.PROCESSING, id }
   } catch (error) {
     console.log(error.message)
     if (productId) {
-      await productService.update(productId, { "status.trellis": STEP_STATUS.FAILED })
+      await failStep("products", productId, STEP)
     }
     console.log("----> Trellis converter failed")
+    return { status: null }
   }
 }
 
-const service = { run, check }
+const service = { run }
 
 export default service

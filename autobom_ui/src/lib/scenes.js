@@ -4,7 +4,7 @@ import { onSnapshot, setDoc, updateDoc } from "firebase/firestore"
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage"
 import { actions } from "./store/index.js"
 import { createServices, getDocRef } from "./services.js"
-import { getFirebaseStorage } from "./firebase.js"
+import { getFirebaseStorage, wakeTicker } from "./firebase.js"
 import { setLoader, clearLoader } from "./loaders.js"
 import { DEFAULT_SCENE_STATUS, EMPTY_ARRAY, FALSE, STEP_STATUS, TRUE } from "./index.js"
 import { showBanner } from "./banner/index.js"
@@ -214,6 +214,7 @@ export const uploadScene = async (file) => {
       createdAt: now,
       updatedAt: now
     })
+    void wakeTicker()
 
     sceneAppActions.set("activeSceneId", id)
     sceneActions.set(id, {
@@ -330,6 +331,7 @@ export const retryScene = async (scene) => {
   setLoader(`scenes.retry.${id}`)
   try {
     await updateDoc(getDocRef("scenes", id), patch)
+    void wakeTicker()
     sceneActions.update(id, (current = {}) => ({
       ...current,
       status: nextStatus,

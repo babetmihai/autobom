@@ -1,65 +1,55 @@
-import _ from "lodash"
-import { STEP_STATUS } from "../lib/status"
 import { PRODUCT_SOURCE, productService } from "../lib/products"
 import { scrapeProduct } from "../lib/scraper"
+import { claimNext, failStep, findOwnProcessing, lockClear } from "../lib/claim"
+import { wake } from "../lib/wake"
 
-const check = async () => {
-  const inProgress = await productService.list({
-    source: PRODUCT_SOURCE.URL,
-    "status.scrape": STEP_STATUS.PROCESSING,
-    pageSize: 1
-  })
-  const item = _.first(inProgress)
-  const { id } = item || {}
-  if (!item) return { status: null }
-  return { status: STEP_STATUS.PROCESSING, id }
-}
+const STEP = "scrape"
 
 const run = async () => {
   let productId
   try {
     console.log("----> Running product scraper")
 
-    const { status } = await check() || {}
-    if (status === STEP_STATUS.PROCESSING) {
-      console.log("----> Product scrape in progress...")
-      return
+    let product = await findOwnProcessing("products", STEP)
+    if (!product) {
+      product = await claimNext({
+        collection: "products",
+        step: STEP,
+        listQuery: { source: PRODUCT_SOURCE.URL },
+        pageSize: 1
+      })
     }
-
-    const products = await productService.list({
-      source: PRODUCT_SOURCE.URL,
-      "status.scrape": STEP_STATUS.PENDING,
-      pageSize: 1
-    })
-    const product = _.first(products)
 
     if (!product) {
       console.log("No products ready for scrape")
-      return
+      return { status: null }
     }
 
     const { id, sourceUrl } = product
     productId = id
 
     if (!sourceUrl) {
-      await productService.update(id, { "status.scrape": STEP_STATUS.FAILED })
+      await failStep("products", id, STEP)
       console.log("----> Product scrape failed, no sourceUrl:", id)
-      return
+      return { status: null }
     }
 
-    await productService.update(id, { "status.scrape": STEP_STATUS.PROCESSING })
     console.log("Scraping product URL:", sourceUrl)
     await scrapeProduct(product)
+    await productService.update(id, lockClear())
+    await wake()
     console.log("----> Product scrape completed:", id)
+    return { status: null }
   } catch (error) {
     console.log(error.message)
     if (productId) {
-      await productService.update(productId, { "status.scrape": STEP_STATUS.FAILED })
+      await failStep("products", productId, STEP)
     }
     console.log("----> Product scraper failed")
+    return { status: null }
   }
 }
 
-const service = { run, check }
+const service = { run }
 
 export default service

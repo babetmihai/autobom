@@ -2,6 +2,8 @@ import { getNull } from "../lib/services"
 import { STEP_STATUS } from "../lib/status"
 import { productService } from "../lib/products"
 import { sceneService } from "../lib/scenes"
+import { lockClear } from "../lib/claim"
+import { wake } from "../lib/wake"
 
 
 const PAGE_SIZE = 100
@@ -42,6 +44,7 @@ const run = async () => {
           const { id, title, name: itemName } = item || {}
           await service.update(id, {
             [statusField]: STEP_STATUS.PENDING,
+            ...lockClear(),
             ...(stepKey === "trellis" ? { trellisRequestId: getNull() } : {})
           })
           const label = title || itemName || id
@@ -59,6 +62,8 @@ const run = async () => {
 
   if (!grandTotal) {
     console.log("No failed products or scenes to reset")
+  } else {
+    await wake()
   }
 
   console.log(`Done. Reset ${grandTotal} failed items to PENDING.`)

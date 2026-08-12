@@ -1,57 +1,48 @@
 import axios from "axios"
-import _ from "lodash"
 import { uploadFile } from "../lib/storage"
 import { COLADA_URL, TRUE } from "../lib"
 import { STEP_STATUS } from "../lib/status"
-import { productService } from "../lib/products"
+import { claimNext, completeStep, failStep, findOwnProcessing } from "../lib/claim"
 import FormData from "form-data"
 
 
 const CONVERT_TIMEOUT_MS = 5 * 60 * 1000
+const STEP = "colada"
 
 const client = axios.create({ baseURL: COLADA_URL })
-
-const check = async () => {
-  const inProgress = await productService.list({ "status.colada": STEP_STATUS.PROCESSING, pageSize: 1 })
-  const item = _.first(inProgress)
-  const { id } = item || {}
-  if (!item) return { status: null }
-  return { status: STEP_STATUS.PROCESSING, id }
-}
 
 const run = async () => {
   let productId
   try {
     console.log("----> Running COLADA converter")
 
-    const { status, id: processingId } = await check() || {}
-    let product = status === STEP_STATUS.PROCESSING ? await productService.get(processingId) : null
-
+    let product = await findOwnProcessing("products", STEP)
     if (!product) {
-      const products = await productService.list({
-        "status.trellis": STEP_STATUS.COMPLETED,
-        "status.colada": STEP_STATUS.PENDING,
-        hasGlb: TRUE,
+      product = await claimNext({
+        collection: "products",
+        step: STEP,
+        listQuery: {
+          "status.trellis": STEP_STATUS.COMPLETED,
+          hasGlb: TRUE
+        },
         pageSize: 1
       })
-      product = _.first(products)
     }
 
     if (!product) {
       console.log("No products ready for COLADA conversion")
-      return
+      return { status: null }
     }
 
     const { id, name, modelGlbUrl } = product
     productId = id
 
     if (!modelGlbUrl) {
-      await productService.update(id, { "status.colada": STEP_STATUS.FAILED })
+      await failStep("products", id, STEP)
       console.log("----> COLADA conversion failed, no modelGlbUrl:", id)
-      return
+      return { status: null }
     }
 
-    await productService.update(id, { "status.colada": STEP_STATUS.PROCESSING })
     console.log("Converting GLB to COLADA zip for product:", id)
 
     const { data: glbData } = await axios.get(modelGlbUrl, { responseType: "arraybuffer" })
@@ -74,24 +65,25 @@ const run = async () => {
       "application/zip"
     )
 
-    await productService.update(id, {
+    await completeStep("products", id, STEP, {
       modelBundleUrl,
-      hasBundle: TRUE,
-      "status.colada": STEP_STATUS.COMPLETED
+      hasBundle: TRUE
     })
 
     console.log("Product name:", name)
     console.log("Model bundle URL:", modelBundleUrl)
     console.log("----> COLADA conversion completed for product:", id)
+    return { status: null }
   } catch (error) {
     console.log(error.message)
     if (productId) {
-      await productService.update(productId, { "status.colada": STEP_STATUS.FAILED })
+      await failStep("products", productId, STEP)
     }
     console.log("----> COLADA converter failed")
+    return { status: null }
   }
 }
 
-const service = { run, check }
+const service = { run }
 
 export default service

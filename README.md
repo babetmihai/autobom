@@ -282,7 +282,7 @@ Root `.env` (see `.env.example`):
 | `FIREBASE_SERVICE_ACCOUNT` | Path to Admin SDK JSON |
 | `SERVICES_ENABLED` | Comma-separated ticker workers |
 | `*_URL` | ML service base URLs (`TRELLIS_URL`, `IMAGE_ANALYZER_URL`, …) |
-| `TICKER_INTERVAL_SECONDS` | Interval between sequential service cycles |
+| `WAKE_CATCHUP_SECONDS` | Idle catch-up if no Firestore wake arrives (default 120) |
 | `TRELLIS_LOW_VRAM` | Trellis container: `true` for 16GB-class GPUs |
 | `AUTOBOM_HTML_DIALOG_URL` | URL the SketchUp dialog loads |
 

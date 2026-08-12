@@ -28,6 +28,4 @@ const app: TFirebaseApp = initializeApp({
 export const db: TFirestore = getFirestore(app)
 export const bucket = getStorage(app).bucket()
 
-
-
 export const versionRef = db.collection("versions").doc(VITE_APP_VERSION)

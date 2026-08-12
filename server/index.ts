@@ -1,7 +1,8 @@
 import _ from "lodash"
-import nodeCron from "node-cron"
-import { SERVICES_ENABLED, TICKER_INTERVAL_SECONDS } from "./lib/index"
+import { SERVICES_ENABLED, WAKE_CATCHUP_SECONDS } from "./lib/index"
 import { STEP_STATUS } from "./lib/status"
+import { MACHINE_ID } from "./lib/machine"
+import { listenWake } from "./lib/wake"
 import productScraperService from "./services/product_scraper"
 import trellisConverterService from "./services/trellis_converter"
 import coladaConverterService from "./services/colada_converter"
@@ -11,9 +12,13 @@ import embeddingIndexService from "./services/embedding_index"
 import sceneCropsService from "./services/scene_crops"
 import sceneEmbeddingsService from "./services/scene_embeddings"
 
+type TRunResult = {
+  status: string | null
+  id?: string
+}
+
 type TService = {
-  check: () => Promise<{ status: string | null, id?: string }>
-  run: () => Promise<void>
+  run: () => Promise<TRunResult | void>
 }
 
 const SERVICE_BY_NAME: Record<string, TService> = {
@@ -27,7 +32,8 @@ const SERVICE_BY_NAME: Record<string, TService> = {
   scene_embeddings: sceneEmbeddingsService
 }
 
-const intervalSeconds = Number(TICKER_INTERVAL_SECONDS)
+const PROCESSING_POLL_SECONDS = 15
+const wakeCatchupSeconds = Number(WAKE_CATCHUP_SECONDS) || 120
 const serviceNames = _.compact(_.map(_.split(SERVICES_ENABLED, ","), _.trim))
 const services = _.map(serviceNames, (name) => {
   const service = SERVICE_BY_NAME[name]
@@ -38,24 +44,29 @@ const services = _.map(serviceNames, (name) => {
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
 let inProgress = false
+let wakeAgain = false
 
-const cycle = async () => {
+const cycle = async (reason: string) => {
   if (inProgress) {
-    console.log("Ticker: cycle in progress, skipping")
+    wakeAgain = true
+    console.log(`Ticker: cycle in progress, queuing wake (${reason})`)
     return
   }
   inProgress = true
   try {
-    for (const service of services) {
-      await service.run()
-      let check = await service.check() || {}
-      while (check.status === STEP_STATUS.PROCESSING) {
-        console.log("Ticker: service in progress, waiting")
-        await sleep(intervalSeconds * 1000)
-        await service.run()
-        check = await service.check() || {}
+    do {
+      wakeAgain = false
+      console.log(`Ticker: cycle start (${reason}) machine=${MACHINE_ID}`)
+      for (const service of services) {
+        let result = await service.run() || { status: null }
+        while (result.status === STEP_STATUS.PROCESSING) {
+          console.log("Ticker: service in progress, waiting")
+          await sleep(PROCESSING_POLL_SECONDS * 1000)
+          result = await service.run() || { status: null }
+        }
       }
-    }
+      console.log("Ticker: cycle done")
+    } while (wakeAgain)
   } finally {
     inProgress = false
   }
@@ -66,8 +77,19 @@ const run = () => {
     console.log("No services enabled (set SERVICES_ENABLED in .env)")
     return
   }
-  console.log(`Starting ticker every ${intervalSeconds}s with: ${serviceNames.join(", ")}`)
-  nodeCron.schedule(`*/${intervalSeconds} * * * * *`, () => cycle())
+
+  console.log(`Starting ticker machine=${MACHINE_ID} services=${serviceNames.join(", ")}`)
+  console.log(`Wake-driven; catch-up every ${wakeCatchupSeconds}s`)
+
+  listenWake(() => {
+    void cycle("wake")
+  })
+
+  setInterval(() => {
+    void cycle("catch-up")
+  }, wakeCatchupSeconds * 1000)
+
+  void cycle("startup")
 }
 
 console.log("Server started")
