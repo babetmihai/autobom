@@ -149,7 +149,7 @@ function ProductModal({
           <TextInput
             label={t("name")}
             name="name"
-            autoFocus
+            data-autofocus
             disabled={busy}
             value={values.name}
             onChange={formik.handleChange}
