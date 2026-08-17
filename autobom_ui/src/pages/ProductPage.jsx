@@ -1,5 +1,5 @@
 import React from "react"
-import { Link, useLocation, useParams } from "react-router-dom"
+import { Link, useHistory, useLocation, useParams } from "react-router-dom"
 import { useSelector } from "react-redux"
 import {
   Anchor,
@@ -11,15 +11,17 @@ import {
   Text,
   Title
 } from "@mantine/core"
-import { IconBox, IconChevronLeft, IconPencil, IconRefresh } from "@tabler/icons-react"
+import { IconBox, IconChevronLeft, IconRefresh } from "@tabler/icons-react"
 import { AppHeader } from "../components/AppHeader"
 import { AppShell } from "../components/AppShell.jsx"
 import {
   colorToHex,
+  deleteProduct,
   fetchProduct,
   formatDimensions,
   formatPrice,
   getActiveTags,
+  getProductPipelineView,
   isScrapePending,
   isUrlSource,
   resolveProductView,
@@ -32,8 +34,8 @@ import { useTagListener } from "../lib/tags.js"
 import { selectListQuantities } from "../lib/list.js"
 import { useLoader } from "../lib/loaders.js"
 import ProductPageActions from "../components/ProductPageActions.jsx"
-import { showProductModal } from "../components/ProductModal.jsx"
-import { cn, PRODUCT_SOURCE, STEP_STATUS } from "../lib/index.js"
+import { showBanner } from "../lib/banner/index.js"
+import { cn, STEP_STATUS } from "../lib/index.js"
 import { glbNativeImport, isInSketchup, useSketchupEnvListener } from "../lib/sketchup.js"
 import { useTranslation } from "react-i18next"
 
@@ -41,8 +43,10 @@ import { useTranslation } from "react-i18next"
 export default function ProductPage() {
   const { t } = useTranslation()
   const { productId } = useParams()
+  const history = useHistory()
   const location = useLocation()
   const [sketchupEnv, setSketchupEnv] = React.useState(null)
+  const [isDeleting, setIsDeleting] = React.useState(false)
 
   const product = useSelector(() => selectProduct(productId))
   const listQuantities = useSelector(() => selectListQuantities())
@@ -71,7 +75,19 @@ export default function ProductPage() {
   const scrapePending = isScrapePending(view)
   const scrapeFailed = ((view && view.status) || {}).scrape === STEP_STATUS.FAILED
   const fromUrl = isUrlSource(view)
-  const sourceLabel = (fromUrl && PRODUCT_SOURCE.URL) || (view && view.storeName)
+  const pipeline = getProductPipelineView(view)
+
+  const onDelete = async () => {
+    if (!window.confirm(t("delete_this_product"))) return
+    try {
+      setIsDeleting(true)
+      await deleteProduct(productId)
+      history.push(from)
+    } catch (error) {
+      showBanner("error", error.message || t("could_not_delete_product"))
+      setIsDeleting(false)
+    }
+  }
 
   return (
     <AppShell header={<AppHeader />}>
@@ -110,15 +126,13 @@ export default function ProductPage() {
         <Paper withBorder radius="md" className="overflow-hidden shadow-sm">
           <div className="flex flex-col lg:flex-row">
             <div className="relative aspect-[4/3] shrink-0 bg-gray-100 lg:w-[min(100%,28rem)] lg:flex-1">
-              {sourceLabel &&
-                <Badge
-                  className="absolute left-3 top-3 z-10 max-w-[calc(100%-1.5rem)]"
-                  variant="default"
-                  title={(view && view.sourceUrl) || (view && view.productUrl) || sourceLabel}
-                >
-                  {sourceLabel}
-                </Badge>
-              }
+              <Badge
+                className="absolute left-3 top-3 z-10 max-w-[calc(100%-1.5rem)]"
+                variant="light"
+                color={pipeline.color}
+              >
+                {pipeline.label}
+              </Badge>
               {view.imageUrl &&
                 <img
                   src={view.imageUrl}
@@ -162,20 +176,9 @@ export default function ProductPage() {
             </div>
 
             <div className="flex min-w-0 flex-1 flex-col p-4 sm:p-6">
-              <div className="flex items-start gap-2">
-                <Title order={2} className="m-0 min-w-0 flex-1 text-xl text-gray-800">
-                  {view.name || view.id}
-                </Title>
-                <Button
-                  variant="default"
-                  size="compact-sm"
-                  className="shrink-0"
-                  leftSection={<IconPencil size={16} stroke={1.75} />}
-                  onClick={() => showProductModal({ productId })}
-                >
-                  {t("edit")}
-                </Button>
-              </div>
+              <Title order={2} className="m-0 min-w-0 text-xl text-gray-800">
+                {view.name || view.id}
+              </Title>
               {fromUrl && view.sourceUrl &&
                 <Anchor
                   href={view.sourceUrl}
@@ -271,6 +274,8 @@ export default function ProductPage() {
                 view={view}
                 inSketchup={inSketchup}
                 glbSupported={glbSupported}
+                isDeleting={isDeleting}
+                onDelete={onDelete}
                 className="mt-6 border-t border-gray-100 pt-4"
               />
             </div>

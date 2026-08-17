@@ -244,6 +244,21 @@ export const hasFailedSteps = (product) => {
   return _.some(status, (value) => value === STEP_STATUS.FAILED)
 }
 
+export const isProductProcessing = (product) => {
+  const { status } = product || {}
+  return _.some(status, (value) => value === STEP_STATUS.PENDING || value === STEP_STATUS.PROCESSING)
+}
+
+export const getProductPipelineView = (product) => {
+  if (hasFailedSteps(product)) {
+    return { label: i18n.t("failed"), color: "red" }
+  }
+  if (isProductProcessing(product)) {
+    return { label: i18n.t("processing"), color: "yellow" }
+  }
+  return { label: i18n.t("ready"), color: "green" }
+}
+
 export const retryProduct = async (product) => {
   const { id, status } = product || {}
   const db = getFirestoreDb()
@@ -275,6 +290,60 @@ export const retryProduct = async (product) => {
       updatedAt: patch.updatedAt
     }
     if (retryingTrellis) delete next.trellisRequestId
+    return {
+      ...products,
+      [id]: toProductItem(next)
+    }
+  })
+}
+
+export const reprocessProduct = async (product) => {
+  const { id } = product || {}
+  const db = getFirestoreDb()
+  if (!db) throw new Error(i18n.t("firebase_not_configured"))
+  if (!id) throw new Error(i18n.t("product_id_required"))
+
+  const fromUrl = isUrlSource(product)
+  let nextStatus = { ...DEFAULT_PRODUCT_STATUS }
+  if (fromUrl) nextStatus = { ...URL_IMPORT_PRODUCT_STATUS }
+  const patch = {
+    status: nextStatus,
+    updatedAt: Date.now(),
+    tags: deleteField(),
+    color: deleteField(),
+    dimensions: deleteField(),
+    embedding: deleteField(),
+    trellisRequestId: deleteField(),
+    hasGlb: deleteField(),
+    hasBundle: deleteField(),
+    modelGlbUrl: deleteField(),
+    modelBundleUrl: deleteField(),
+    lockedBy: deleteField(),
+    lockedAt: deleteField(),
+    lockedStep: deleteField()
+  }
+
+  await updateDoc(getDocRef("products", id), patch)
+  void wakeTicker()
+
+  actions.update("products", (products = {}) => {
+    const current = products[id] || { id }
+    const next = {
+      ...current,
+      status: nextStatus,
+      updatedAt: patch.updatedAt,
+      tags: null,
+      color: null,
+      dimensions: null,
+      hasGlb: false,
+      hasBundle: false,
+      glbUrl: null,
+      bundleUrl: null,
+      hasModel: false,
+      download_url: null
+    }
+    delete next.embedding
+    delete next.trellisRequestId
     return {
       ...products,
       [id]: toProductItem(next)

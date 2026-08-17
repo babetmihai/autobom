@@ -2,7 +2,6 @@ import React from "react"
 import _ from "lodash"
 import { useFormik } from "formik"
 import { useSelector } from "react-redux"
-import { useHistory, useLocation } from "react-router-dom"
 import { useTranslation } from "react-i18next"
 import {
   Button,
@@ -18,7 +17,6 @@ import { hideModal, showModal } from "../lib/modals.js"
 import { showBanner } from "../lib/banner/index.js"
 import {
   createProduct,
-  deleteProduct,
   productToFormValues,
   selectProduct,
   updateProduct
@@ -32,11 +30,8 @@ function ProductModal({
   onClose = hideModal
 }) {
   const { t } = useTranslation()
-  const history = useHistory()
-  const location = useLocation()
   const product = useSelector(() => selectProduct(productId))
   const isEdit = Boolean(productId)
-  const [isDeleting, setIsDeleting] = React.useState(false)
   const [imageFile, setImageFile] = React.useState(null)
   const [imagePreview, setImagePreview] = React.useState(null)
   const [imageError, setImageError] = React.useState("")
@@ -88,23 +83,10 @@ function ProductModal({
   })
 
   const { values, errors, touched, isSubmitting } = formik
-  const busy = isSubmitting || isDeleting
+  const busy = isSubmitting
   const name = (isEdit && t("edit_product")) || t("new_product")
   const previewSrc = imagePreview || existingImageUrl
   const canReplace = Boolean(previewSrc)
-
-  const onDelete = async () => {
-    if (!window.confirm(t("delete_this_product"))) return
-    try {
-      setIsDeleting(true)
-      await deleteProduct(productId)
-      hideModal()
-      if (location.pathname === `/product/${productId}`) history.push("/")
-    } catch (error) {
-      showBanner("error", error.message || t("could_not_delete_product"))
-      setIsDeleting(false)
-    }
-  }
 
   const openImagePicker = () => {
     if (busy) return
@@ -118,18 +100,6 @@ function ProductModal({
       className="max-w-[32rem]"
       footer={
         <Group justify="flex-end" gap="xs">
-          {isEdit &&
-            <Button
-              variant="subtle"
-              color="red"
-              className="mr-auto"
-              disabled={busy}
-              loading={isDeleting}
-              onClick={onDelete}
-            >
-              {t("delete")}
-            </Button>
-          }
           <Button variant="default" disabled={busy} onClick={onClose}>
             {t("cancel")}
           </Button>

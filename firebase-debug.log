@@ -1,0 +1,22 @@
+[debug] [2026-08-17T15:24:17.235Z] ----------------------------------------------------------------------
+[debug] [2026-08-17T15:24:17.237Z] Command:       /Users/mihaibabet/.nvm/versions/node/v22.19.0/bin/node /Users/mihaibabet/Autobom/autobom/node_modules/.bin/firebase --token dummy
+[debug] [2026-08-17T15:24:17.237Z] CLI Version:   15.26.0
+[debug] [2026-08-17T15:24:17.237Z] Platform:      darwin
+[debug] [2026-08-17T15:24:17.237Z] Node Version:  v22.19.0
+[debug] [2026-08-17T15:24:17.238Z] Detected Agent: cursor
+[debug] [2026-08-17T15:24:17.238Z] Time:          Mon Aug 17 2026 18:24:17 GMT+0300 (Eastern European Summer Time)
+[debug] [2026-08-17T15:24:17.238Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-08-17T15:24:17.239Z] TypeError: Cannot read properties of undefined (reading '0')
+    at Command.<anonymous> (/Users/mihaibabet/Autobom/autobom/node_modules/firebase-tools/lib/index.js:78:21)
+    at Command.listener [as _actionHandler] (/Users/mihaibabet/Autobom/autobom/node_modules/commander/index.js:413:31)
+    at Command._parseCommand (/Users/mihaibabet/Autobom/autobom/node_modules/commander/index.js:914:14)
+    at Command.parse (/Users/mihaibabet/Autobom/autobom/node_modules/commander/index.js:717:10)
+    at cli (/Users/mihaibabet/Autobom/autobom/node_modules/firebase-tools/lib/bin/cli.js:138:26)
+    at Object.<anonymous> (/Users/mihaibabet/Autobom/autobom/node_modules/firebase-tools/lib/bin/firebase.js:27:5)
+    at Module._compile (node:internal/modules/cjs/loader:1706:14)
+    at Object..js (node:internal/modules/cjs/loader:1839:10)
+    at Module.load (node:internal/modules/cjs/loader:1441:32)
+    at Function._load (node:internal/modules/cjs/loader:1263:12)
+[error] 
+[error] Error: An unexpected error has occurred.

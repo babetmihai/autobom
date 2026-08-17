@@ -1,7 +1,7 @@
 import axios from "axios"
 import { TEXT_ANALYZER_URL } from "../lib"
 import { isScrapePending } from "../lib/status"
-import { PRODUCT_TAGS } from "../lib/products"
+import { PRODUCT_TAGS, hasDimensions } from "../lib/products"
 import { claimNext, completeStep, failStep, findOwnProcessing } from "../lib/claim"
 
 
@@ -30,7 +30,7 @@ const run = async () => {
       return { status: null }
     }
 
-    const { id, name, description, tags } = product
+    const { id, name, description, tags, dimensions: existingDimensions } = product
     productId = id
     const text = [name, description].filter(Boolean).join("\n")
 
@@ -45,11 +45,10 @@ const run = async () => {
       timeout: ANALYZE_TIMEOUT_MS
     })
     const { tags: resultTags, dimensions } = data
+    const payload = { tags: { ...tags, ...resultTags } }
+    if (!hasDimensions(existingDimensions)) payload.dimensions = dimensions
 
-    await completeStep("products", id, STEP, {
-      tags: { ...tags, ...resultTags },
-      dimensions
-    })
+    await completeStep("products", id, STEP, payload)
 
     console.log("----> Text analysis completed for product:", id)
     return { status: null }

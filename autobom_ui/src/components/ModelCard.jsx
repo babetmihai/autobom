@@ -5,6 +5,7 @@ import {
   colorToHex,
   formatDimensions,
   formatPrice,
+  getProductPipelineView,
   getVisibleTags,
   isScrapePending,
   isUrlSource,
@@ -12,7 +13,7 @@ import {
   retryProduct
 } from "../lib/products"
 import ProductActions from "./ProductActions.jsx"
-import { cn, PRODUCT_SOURCE, STEP_STATUS } from "../lib/index.js"
+import { cn, STEP_STATUS } from "../lib/index.js"
 import { useTranslation } from "react-i18next"
 
 function ModelCard({
@@ -34,7 +35,7 @@ function ModelCard({
   const fromUrl = isUrlSource(view)
   const scrapePending = isScrapePending(view)
   const scrapeFailed = (view.status || {}).scrape === STEP_STATUS.FAILED
-  const sourceLabel = (fromUrl && PRODUCT_SOURCE.URL) || view.storeName
+  const pipeline = getProductPipelineView(view)
 
   const openProduct = () => {
     const from = history.location.pathname
@@ -67,16 +68,14 @@ function ModelCard({
         aria-label={t("open_product", { name: view.name || view.id })}
       >
         <div className="relative flex aspect-[4/3] shrink-0 items-center justify-center overflow-hidden bg-gray-100">
-          {sourceLabel &&
-            <Badge
-              className="absolute left-1.5 top-1.5 z-10 max-w-[calc(100%-0.75rem)]"
-              variant="default"
-              size="sm"
-              title={view.sourceUrl || view.productUrl || sourceLabel}
-            >
-              {sourceLabel}
-            </Badge>
-          }
+          <Badge
+            className="absolute left-1.5 top-1.5 z-10 max-w-[calc(100%-0.75rem)]"
+            variant="light"
+            color={pipeline.color}
+            size="sm"
+          >
+            {pipeline.label}
+          </Badge>
           {view.imageUrl &&
             <img
               src={view.imageUrl}

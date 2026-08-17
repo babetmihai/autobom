@@ -1,5 +1,5 @@
 import { ActionIcon, Button, Group } from "@mantine/core"
-import { IconExternalLink, IconPencil } from "@tabler/icons-react"
+import { IconExternalLink } from "@tabler/icons-react"
 import { useTranslation } from "react-i18next"
 import {
   addOrImportProduct,
@@ -8,7 +8,6 @@ import {
 } from "../lib/products.js"
 import InsertButton from "./InsertButton.jsx"
 import { useLoader } from "../lib/loaders.js"
-import { showProductModal } from "./ProductModal.jsx"
 import { cn } from "../lib/index.js"
 
 export default function ProductActions({
@@ -89,18 +88,6 @@ export default function ProductActions({
           {t("dae")}
         </Button>
       }
-      <ActionIcon
-        variant="subtle"
-        color="gray"
-        size="sm"
-        title={t("edit_product")}
-        onClick={(event) => {
-          stop(event)
-          showProductModal({ productId })
-        }}
-      >
-        <IconPencil size={14} stroke={1.75} />
-      </ActionIcon>
       {view.productUrl &&
         <ActionIcon
           component="a"
