@@ -9,7 +9,7 @@ import {
 } from "./index.js"
 import { setLoader, clearLoader } from "./loaders.js"
 import { createServices, getDocRef } from "./services.js"
-import { getFirestoreDb, wakeTicker } from "./firebase.js"
+import { getFirebaseStorage, getFirestoreDb, wakeTicker } from "./firebase.js"
 import _ from "lodash"
 import { v7 as uuidv7 } from "uuid"
 import sketchup from "./sketchup.js"
@@ -19,6 +19,7 @@ import i18n from "./i18n/index.js"
 import React from "react"
 import { useSelector } from "react-redux"
 import { deleteField, onSnapshot, setDoc, updateDoc } from "firebase/firestore"
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage"
 
 const PAGE_SIZE = 50
 const IMPORT_UI_DELAY_MS = 75
@@ -68,8 +69,6 @@ const mapProduct = (data) => {
   if (!data) return null
 
   const { imageUrl } = data || {}
-  const title = data.title || data.name
-  const subtitle = data.name && title !== data.name ? data.name : null
   const glbUrl = data.hasGlb === TRUE ? data.modelGlbUrl || null : null
   const bundleUrl = data.hasBundle === TRUE ? data.modelBundleUrl || null : null
 
@@ -80,8 +79,6 @@ const mapProduct = (data) => {
   return {
     id: data.id,
     name: data.name,
-    title,
-    subtitle,
     description: data.description || null,
     sku: data.sku || null,
     price: parsePrice(data.price),
@@ -288,22 +285,18 @@ export const retryProduct = async (product) => {
 export const productToFormValues = (product) => {
   const {
     name = "",
-    title = "",
     description = "",
     sku = "",
     price = "",
-    imageUrl = "",
     productUrl = "",
     storeName = ""
   } = product || {}
 
   return {
     name: name || "",
-    title: title || "",
     description: description || "",
     sku: sku || "",
     price: price == null ? "" : String(price),
-    imageUrl: imageUrl || "",
     productUrl: productUrl || "",
     storeName: storeName || ""
   }
@@ -311,35 +304,47 @@ export const productToFormValues = (product) => {
 
 const formValuesToPayload = (values) => {
   const name = (values.name || "").trim()
-  const title = (values.title || name).trim()
   return _.omitBy({
     name,
-    title,
     description: (values.description || "").trim() || null,
     sku: (values.sku || "").trim() || null,
     price: values.price === "" || values.price == null ? null : String(values.price),
-    imageUrl: (values.imageUrl || "").trim() || null,
     productUrl: (values.productUrl || "").trim() || null,
     storeName: (values.storeName || "").trim() || null
   }, _.isNil)
 }
 
-export const createProduct = async (values) => {
+const uploadProductImage = async (productId, file) => {
+  const storage = getFirebaseStorage()
+  if (!storage) throw new Error(i18n.t("firebase_not_configured"))
+  const contentType = file.type || "image/jpeg"
+  let ext = ".jpg"
+  if (contentType === "image/png") ext = ".png"
+  if (contentType === "image/webp") ext = ".webp"
+  const storageRef = ref(storage, `images/${productId}${ext}`)
+  await uploadBytes(storageRef, file, { contentType })
+  return getDownloadURL(storageRef)
+}
+
+export const createProduct = async (values, imageFile) => {
   const createdBy = selectAuthUid()
   const db = getFirestoreDb()
   if (!db) throw new Error(i18n.t("firebase_not_configured"))
   if (!createdBy) throw new Error(i18n.t("sign_in_required"))
+  if (!imageFile) throw new Error(i18n.t("image_is_required"))
 
   const id = uuidv7()
   const now = Date.now()
   const payload = formValuesToPayload(values)
   if (!payload.name) throw new Error(i18n.t("name_is_required"))
+  const imageUrl = await uploadProductImage(id, imageFile)
 
   const raw = {
     _active: TRUE,
     id,
     createdBy,
     ...payload,
+    imageUrl,
     status: { ...DEFAULT_PRODUCT_STATUS },
     createdAt: now,
     updatedAt: now
@@ -352,7 +357,7 @@ export const createProduct = async (values) => {
   return selectProduct(id)
 }
 
-export const updateProduct = async (id, values) => {
+export const updateProduct = async (id, values, imageFile) => {
   const db = getFirestoreDb()
   if (!db) throw new Error(i18n.t("firebase_not_configured"))
   if (!id) throw new Error(i18n.t("product_id_required"))
@@ -364,19 +369,49 @@ export const updateProduct = async (id, values) => {
     ...payload,
     updatedAt: Date.now()
   }
+  if (imageFile) {
+    patch.imageUrl = await uploadProductImage(id, imageFile)
+    patch["status.image"] = STEP_STATUS.PENDING
+    patch["status.embedding"] = STEP_STATUS.PENDING
+    patch["status.trellis"] = STEP_STATUS.PENDING
+    patch["status.colada"] = STEP_STATUS.PENDING
+    patch.trellisRequestId = deleteField()
+    patch.hasGlb = deleteField()
+    patch.hasBundle = deleteField()
+    patch.modelGlbUrl = deleteField()
+    patch.modelBundleUrl = deleteField()
+  }
   await updateDoc(getDocRef("products", id), patch)
+  if (imageFile) void wakeTicker()
 
   actions.update("products", (products = {}) => {
     const current = products[id] || { id }
+    const next = {
+      ...current,
+      ...payload,
+      price: parsePrice(payload.price),
+      updatedAt: patch.updatedAt
+    }
+    if (imageFile) {
+      next.imageUrl = patch.imageUrl
+      next.status = {
+        ...(current.status || {}),
+        image: STEP_STATUS.PENDING,
+        embedding: STEP_STATUS.PENDING,
+        trellis: STEP_STATUS.PENDING,
+        colada: STEP_STATUS.PENDING
+      }
+      next.hasGlb = false
+      next.hasBundle = false
+      next.glbUrl = null
+      next.bundleUrl = null
+      next.hasModel = false
+      next.download_url = null
+      delete next.trellisRequestId
+    }
     return {
       ...products,
-      [id]: toProductItem({
-        ...current,
-        ...payload,
-        price: parsePrice(payload.price),
-        title: payload.title || payload.name,
-        updatedAt: patch.updatedAt
-      })
+      [id]: toProductItem(next)
     }
   })
   showBanner("success", i18n.t("product_saved"))
@@ -429,7 +464,6 @@ export const importProductFromUrl = async (url) => {
       _active: TRUE,
       id,
       name,
-      title: name,
       source: PRODUCT_SOURCE.URL,
       sourceUrl,
       productUrl: sourceUrl,

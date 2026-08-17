@@ -9,9 +9,11 @@ import {
   Group,
   SimpleGrid,
   Stack,
+  Text,
   Textarea,
   TextInput
 } from "@mantine/core"
+import { IconUpload } from "@tabler/icons-react"
 import { hideModal, showModal } from "../lib/modals.js"
 import { showBanner } from "../lib/banner/index.js"
 import {
@@ -35,6 +37,21 @@ function ProductModal({
   const product = useSelector(() => selectProduct(productId))
   const isEdit = Boolean(productId)
   const [isDeleting, setIsDeleting] = React.useState(false)
+  const [imageFile, setImageFile] = React.useState(null)
+  const [imagePreview, setImagePreview] = React.useState(null)
+  const [imageError, setImageError] = React.useState("")
+  const imageInputRef = React.useRef(null)
+  const { imageUrl: existingImageUrl } = product || {}
+
+  React.useEffect(() => {
+    if (!imageFile) {
+      setImagePreview(null)
+      return
+    }
+    const url = URL.createObjectURL(imageFile)
+    setImagePreview(url)
+    return () => URL.revokeObjectURL(url)
+  }, [imageFile])
 
   const formik = useFormik({
     enableReinitialize: true,
@@ -42,22 +59,24 @@ function ProductModal({
     validate: (values) => {
       const errors = {}
       if (!(values.name || "").trim()) errors.name = t("name_is_required")
-      if (values.imageUrl && !/^https?:\/\//i.test(values.imageUrl.trim())) {
-        errors.imageUrl = t("enter_valid_image_url")
-      }
       if (values.productUrl && !/^https?:\/\//i.test(values.productUrl.trim())) {
         errors.productUrl = t("enter_valid_product_url")
       }
       return errors
     },
     onSubmit: async (values, helpers) => {
+      if (!imageFile && !existingImageUrl) {
+        setImageError(t("image_is_required"))
+        helpers.setSubmitting(false)
+        return
+      }
       try {
         helpers.setSubmitting(true)
         let item
         if (isEdit) {
-          item = await updateProduct(productId, values)
+          item = await updateProduct(productId, values, imageFile)
         } else {
-          item = await createProduct(values)
+          item = await createProduct(values, imageFile)
         }
         await onSubmit(item)
         hideModal()
@@ -71,6 +90,8 @@ function ProductModal({
   const { values, errors, touched, isSubmitting } = formik
   const busy = isSubmitting || isDeleting
   const name = (isEdit && t("edit_product")) || t("new_product")
+  const previewSrc = imagePreview || existingImageUrl
+  const canReplace = Boolean(previewSrc)
 
   const onDelete = async () => {
     if (!window.confirm(t("delete_this_product"))) return
@@ -83,6 +104,11 @@ function ProductModal({
       showBanner("error", error.message || t("could_not_delete_product"))
       setIsDeleting(false)
     }
+  }
+
+  const openImagePicker = () => {
+    if (busy) return
+    imageInputRef.current?.click()
   }
 
   return (
@@ -130,15 +156,6 @@ function ProductModal({
             onBlur={formik.handleBlur}
             error={touched.name && errors.name}
           />
-          <TextInput
-            label={t("title")}
-            name="title"
-            disabled={busy}
-            value={values.title}
-            onChange={formik.handleChange}
-            onBlur={formik.handleBlur}
-            placeholder={t("optional_display_title")}
-          />
           <Textarea
             label={t("description")}
             name="description"
@@ -177,17 +194,57 @@ function ProductModal({
             onChange={formik.handleChange}
             onBlur={formik.handleBlur}
           />
-          <TextInput
-            label={t("image_url")}
-            name="imageUrl"
-            type="url"
-            disabled={busy}
-            value={values.imageUrl}
-            onChange={formik.handleChange}
-            onBlur={formik.handleBlur}
-            placeholder="https://..."
-            error={touched.imageUrl && errors.imageUrl}
-          />
+          <div>
+            <Text size="sm" fw={500} className="mb-1.5">{t("image")}</Text>
+            <Group align="flex-end" gap="sm" wrap="nowrap">
+              <button
+                type="button"
+                className="h-[7.5rem] w-[7.5rem] shrink-0 cursor-pointer appearance-none overflow-hidden rounded-lg border border-gray-200 bg-gray-100 p-0"
+                disabled={busy}
+                onClick={openImagePicker}
+                aria-label={(canReplace && t("replace_image")) || t("upload_image")}
+              >
+                {previewSrc &&
+                  <img src={previewSrc} alt="" className="h-full w-full object-cover" />
+                }
+              </button>
+              <Stack gap={4}>
+                <Button
+                  type="button"
+                  variant="default"
+                  disabled={busy}
+                  leftSection={<IconUpload size={16} stroke={1.75} />}
+                  onClick={openImagePicker}
+                >
+                  {canReplace && t("replace_image")}
+                  {!canReplace && t("upload_image")}
+                </Button>
+                {imageFile &&
+                  <Text size="xs" c="dimmed">{imageFile.name}</Text>
+                }
+                {!imageFile &&
+                  <Text size="xs" c="dimmed">{t("jpeg_png_or_webp")}</Text>
+                }
+              </Stack>
+            </Group>
+            {imageError &&
+              <Text size="xs" c="red" className="mt-1">{imageError}</Text>
+            }
+            <input
+              ref={imageInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              className="hidden"
+              disabled={busy}
+              onChange={(event) => {
+                const file = _.first(event.target.files)
+                event.target.value = ""
+                if (!file || !_.includes(["image/jpeg", "image/png", "image/webp"], file.type)) return
+                setImageFile(file)
+                setImageError("")
+              }}
+            />
+          </div>
           <TextInput
             label={t("product_url")}
             name="productUrl"

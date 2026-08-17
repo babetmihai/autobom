@@ -122,7 +122,7 @@ export default function ProductPage() {
               {view.imageUrl &&
                 <img
                   src={view.imageUrl}
-                  alt={view.title || view.name || t("model")}
+                  alt={view.name || t("model")}
                   className="h-full w-full object-cover"
                 />
               }
@@ -164,7 +164,7 @@ export default function ProductPage() {
             <div className="flex min-w-0 flex-1 flex-col p-4 sm:p-6">
               <div className="flex items-start gap-2">
                 <Title order={2} className="m-0 min-w-0 flex-1 text-xl text-gray-800">
-                  {view.title || view.name || view.id}
+                  {view.name || view.id}
                 </Title>
                 <Button
                   variant="default"
@@ -187,9 +187,6 @@ export default function ProductPage() {
                 >
                   {view.sourceUrl}
                 </Anchor>
-              }
-              {view.subtitle &&
-                <Text size="sm" c="dimmed" mt={4}>{view.subtitle}</Text>
               }
               {view.description &&
                 <Text

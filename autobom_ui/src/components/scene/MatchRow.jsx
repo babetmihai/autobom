@@ -27,8 +27,8 @@ export default function MatchRow({
 
   const view = product ? resolveProductView(product) : null
 
-  const { title: viewTitle, name: viewName, price, currency } = view || {}
-  const title = viewTitle || viewName || t("catalog_item")
+  const { name, price, currency } = view || {}
+  const label = name || t("catalog_item")
   const priceDisplay = formatPrice(price, currency)
   const thumbUrl = view?.imageUrl
 
@@ -61,7 +61,7 @@ export default function MatchRow({
         }}
         role="link"
         tabIndex={0}
-        aria-label={t("open_product_match", { name: title, percent: scorePercent })}
+        aria-label={t("open_product_match", { name: label, percent: scorePercent })}
       >
         {thumbUrl &&
           <img
@@ -74,7 +74,7 @@ export default function MatchRow({
           <div className="h-10 w-10 shrink-0 rounded bg-gray-200" />
         }
         <div className="min-w-0 flex-1">
-          <p className="m-0 truncate text-sm font-medium text-gray-800">{title}</p>
+          <p className="m-0 truncate text-sm font-medium text-gray-800">{label}</p>
           <p className="m-0 text-xs text-gray-500">{t("percent_match", { percent: scorePercent })}</p>
           {priceDisplay &&
             <p className="m-0 mt-0.5 text-xs font-semibold text-brand-500">{priceDisplay}</p>

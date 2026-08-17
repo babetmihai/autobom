@@ -78,7 +78,6 @@ export const scrapeProduct = async (product: {
 
   return productService.update(id, cleanDeep({
     name,
-    title: name,
     description,
     sku,
     price,

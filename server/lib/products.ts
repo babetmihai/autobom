@@ -2,7 +2,7 @@ import { createServices } from './services'
 import { TProductStatus } from './status'
 
 
-export const PRODUCT_SEARCH_FIELDS = ['title', 'subtitle', 'sku', 'color', 'tags']
+export const PRODUCT_SEARCH_FIELDS = ['sku', 'color', 'tags']
 export const PRODUCT_TAGS = [
   'chair',
   'armchair',
@@ -64,7 +64,6 @@ export type TProduct = {
   id: string
   createdBy: string
   name: string
-  title: string
   description: string
   sku: string
   price: string

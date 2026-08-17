@@ -41,13 +41,13 @@ const run = async () => {
         if (!items.length) break
 
         for (const item of items) {
-          const { id, title, name: itemName } = item || {}
+          const { id, name: itemName } = item || {}
           await service.update(id, {
             [statusField]: STEP_STATUS.PENDING,
             ...lockClear(),
             ...(stepKey === "trellis" ? { trellisRequestId: getNull() } : {})
           })
-          const label = title || itemName || id
+          const label = itemName || id
           console.log(`Reset ${name} ${stepKey} to PENDING: ${label}`)
           total++
         }

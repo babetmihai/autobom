@@ -64,7 +64,7 @@ function ModelCard({
         }}
         role="link"
         tabIndex={0}
-        aria-label={t("open_product", { name: view.title || view.name || view.id })}
+        aria-label={t("open_product", { name: view.name || view.id })}
       >
         <div className="relative aspect-[4/3] shrink-0 overflow-hidden bg-gray-100">
           {sourceLabel &&
@@ -80,7 +80,7 @@ function ModelCard({
           {view.imageUrl &&
             <img
               src={view.imageUrl}
-              alt={view.title || view.name || t("model")}
+              alt={view.name || t("model")}
               loading="lazy"
               className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
             />
@@ -147,20 +147,9 @@ function ModelCard({
         }
 
         <div className="flex flex-1 flex-col p-3">
-          <h3
-            className={cn(
-              "line-clamp-3 leading-snug",
-              "text-sm font-semibold text-gray-800 mb-1",
-              view.subtitle && "mb-0.5"
-            )}
-          >
-            {view.title || view.name || view.id}
+          <h3 className="mb-1 line-clamp-3 text-sm font-semibold leading-snug text-gray-800">
+            {view.name || view.id}
           </h3>
-          {view.subtitle &&
-            <p className="mb-1 line-clamp-2 text-xs leading-snug text-gray-500">
-              {view.subtitle}
-            </p>
-          }
           {fromUrl && view.sourceUrl &&
             <a
               href={view.sourceUrl}

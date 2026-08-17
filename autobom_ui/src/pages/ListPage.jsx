@@ -104,7 +104,7 @@ export default function ListPage() {
         <Paper withBorder radius="md" className="overflow-hidden shadow-sm">
           <ul className="m-0 list-none divide-y divide-gray-100 p-0">
             {lines.map(({ id, view, qty, lineTotal }) => {
-              const { price, currency, imageUrl, title, name, sku } = view || {}
+              const { price, currency, imageUrl, name, sku } = view || {}
               const loading = loadingIds.includes(id)
               const priceDisplay = formatPrice(price, currency)
               const lineTotalDisplay = lineTotal != null
@@ -136,7 +136,7 @@ export default function ListPage() {
                             }}
                             className="block truncate text-sm font-semibold text-gray-800"
                           >
-                            {title || name || id}
+                            {name || id}
                           </Anchor>
                           {sku &&
                             <Text
