@@ -1,8 +1,10 @@
 import React from "react"
 import { cn } from "../../lib/index.js"
+import { useTranslation } from "react-i18next"
 
 
 export default function SceneViewer({ scene, selectedCropId, onSelectCrop }) {
+  const { t } = useTranslation()
   const imgRef = React.useRef(null)
   const [size, setSize] = React.useState({ w: 0, h: 0 })
 
@@ -27,13 +29,13 @@ export default function SceneViewer({ scene, selectedCropId, onSelectCrop }) {
 
   return (
     <section className="mb-6">
-      <h2 className="mb-3 mt-0 text-sm font-semibold text-gray-700">Scene overview</h2>
+      <h2 className="mb-3 mt-0 text-sm font-semibold text-gray-700">{t("scene_overview")}</h2>
       <div className="flex w-full max-w-full justify-center overflow-hidden rounded-lg border border-gray-200 bg-white">
         <div className="relative max-w-full">
           <img
             ref={imgRef}
             src={scene.url}
-            alt="Uploaded scene"
+            alt={t("uploaded_scene")}
             className="block h-auto max-h-[40vh] w-full object-contain sm:max-h-[32rem] sm:w-auto sm:max-w-full"
           />
           {scene.crops?.map((crop) => {
@@ -56,7 +58,7 @@ export default function SceneViewer({ scene, selectedCropId, onSelectCrop }) {
                   width: w * scaleX,
                   height: h * scaleY
                 }}
-                aria-label={crop.label || "Detected item"}
+                aria-label={crop.label || t("detected_item")}
               />
             )
           })}

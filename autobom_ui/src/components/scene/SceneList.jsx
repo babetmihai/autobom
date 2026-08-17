@@ -17,6 +17,7 @@ import {
 } from "../../lib/scenes.js"
 import { useLoader } from "../../lib/loaders.js"
 import { cn } from "../../lib/index.js"
+import { useTranslation } from "react-i18next"
 
 const sceneThumbSizeClass = "h-[5.2rem] w-[5.2rem]"
 const sceneRowContentClass = "flex min-w-0 flex-1 flex-col justify-start gap-1 p-3"
@@ -32,6 +33,7 @@ const skeletonRows = [0, 1, 2]
 
 
 export default function SceneList() {
+  const { t } = useTranslation()
   const scenes = useSelector(() => selectScenesList())
   const { hasMore } = useSelector(() => selectScenesListMeta())
   const loading = useLoader("scenes.list")
@@ -55,7 +57,7 @@ export default function SceneList() {
             id="scene-list-heading"
             className="m-0 text-gray-700"
           >
-            Your scenes
+            {t("your_scenes")}
           </Title>
           {showList &&
             <Badge color="gray" variant="light" size="sm">
@@ -70,10 +72,10 @@ export default function SceneList() {
             className="shrink-0"
             onClick={() => fetchScenes({ reset: true })}
             disabled={loading}
-            aria-label="Refresh scenes"
+            aria-label={t("refresh_scenes")}
             leftSection={loading ? <Loader size={14} /> : <IconRefresh size={16} stroke={1.75} />}
           >
-            Refresh
+            {t("refresh")}
           </Button>
         }
       </Group>
@@ -102,9 +104,9 @@ export default function SceneList() {
           radius="md"
           className="border-dashed text-center"
         >
-          <Text fw={500} size="sm">No scenes yet</Text>
+          <Text fw={500} size="sm">{t("no_scenes_yet")}</Text>
           <Text size="xs" c="dimmed" mt={4}>
-            Upload a room photo above to detect furniture and match catalog items.
+            {t("no_scenes_hint")}
           </Text>
         </Paper>
       }
@@ -120,18 +122,18 @@ export default function SceneList() {
             const statusLabel = sceneStatusLabel(scene.status)
             const sceneName = resolveSceneName(scene)
 
-            let metaLabel = "No items detected yet"
+            let metaLabel = t("no_items_detected_yet")
             if (cropCount > 0) {
-              metaLabel = `${cropCount} item${cropCount === 1 ? "" : "s"} detected`
+              metaLabel = t("items_detected", { count: cropCount })
             } else if (processing) {
-              metaLabel = "Analysis in progress"
+              metaLabel = t("analysis_in_progress")
             }
 
             return (
               <li key={scene.id}>
                 <Link
                   to={`/scene-analyzer/${scene.id}`}
-                  aria-label={`Open ${sceneName}, ${statusLabel}`}
+                  aria-label={t("open_scene", { name: sceneName, status: statusLabel })}
                   className={cn(
                     "flex h-[5.2rem] overflow-hidden rounded-lg border border-gray-200 bg-white",
                     "transition-[border-color,box-shadow,background-color]",
@@ -182,7 +184,7 @@ export default function SceneList() {
       {showList && hasMore &&
         <Center mt="md">
           <Button variant="default" onClick={() => loadMoreScenes()} loading={loadingMore}>
-            Load more
+            {t("load_more")}
           </Button>
         </Center>
       }

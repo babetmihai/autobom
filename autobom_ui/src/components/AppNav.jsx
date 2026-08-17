@@ -2,43 +2,47 @@ import { NavLink as RouterNavLink, useLocation } from "react-router-dom"
 import { useSelector } from "react-redux"
 import { ActionIcon, Badge, NavLink, Stack, Tooltip } from "@mantine/core"
 import { IconBox, IconList, IconPhotoScan } from "@tabler/icons-react"
+import { useTranslation } from "react-i18next"
 import { selectListItemCount } from "../lib/list.js"
 import { isInSketchup } from "../lib/sketchup.js"
 
 const items = [
   {
     to: "/",
-    label: "Product Catalog",
+    labelKey: "product_catalog",
     icon: IconBox,
     isActive: (path) => path === "/"
   },
   {
     to: "/scene-analyzer",
-    label: "Scene Analyzer",
+    labelKey: "scene_analyzer",
     icon: IconPhotoScan,
     isActive: (path) => path.startsWith("/scene-analyzer")
   }
 ]
 
 export function AppNav({ collapsed = false }) {
+  const { t } = useTranslation()
   const location = useLocation()
   const path = location.pathname
   const listCount = useSelector(() => selectListItemCount())
   const inSketchup = isInSketchup()
   const listActive = path === "/list" || path.startsWith("/list/")
+  const listLabel = (listCount > 0 && t("list_with_count", { count: listCount })) || t("list")
+  const listAria = (listCount > 0 && t("list_items_aria", { count: listCount })) || t("list")
 
   if (collapsed) {
     return (
       <Stack
         component="nav"
         gap={4}
-        aria-label="Main"
+        aria-label={t("main")}
         className="flex-1 items-center"
       >
-        {items.map(({ to, label, icon: Icon, isActive }) => (
+        {items.map(({ to, labelKey, icon: Icon, isActive }) => (
           <Tooltip
             key={to}
-            label={label}
+            label={t(labelKey)}
             position="right"
             withArrow
           >
@@ -49,7 +53,7 @@ export function AppNav({ collapsed = false }) {
               variant={isActive(path) ? "light" : "subtle"}
               color={isActive(path) ? "brand" : "gray"}
               size="lg"
-              aria-label={label}
+              aria-label={t(labelKey)}
               activeClassName=""
             >
               <Icon size={18} stroke={1.75} />
@@ -58,7 +62,7 @@ export function AppNav({ collapsed = false }) {
         ))}
         {inSketchup &&
           <Tooltip
-            label={listCount > 0 ? `List (${listCount})` : "List"}
+            label={listLabel}
             position="right"
             withArrow
           >
@@ -68,7 +72,7 @@ export function AppNav({ collapsed = false }) {
               variant={listActive ? "light" : "subtle"}
               color={listActive ? "brand" : "gray"}
               size="lg"
-              aria-label={listCount > 0 ? `List, ${listCount} items` : "List"}
+              aria-label={listAria}
               className="relative"
               activeClassName=""
             >
@@ -95,16 +99,16 @@ export function AppNav({ collapsed = false }) {
     <Stack
       component="nav"
       gap={4}
-      aria-label="Main"
+      aria-label={t("main")}
       className="flex-1"
     >
-      {items.map(({ to, label, icon: Icon, isActive }) => (
+      {items.map(({ to, labelKey, icon: Icon, isActive }) => (
         <NavLink
           key={to}
           component={RouterNavLink}
           to={to}
           exact={true}
-          label={label}
+          label={t(labelKey)}
           leftSection={<Icon size={18} stroke={1.75} />}
           active={isActive(path)}
           variant="light"
@@ -115,7 +119,7 @@ export function AppNav({ collapsed = false }) {
         <NavLink
           component={RouterNavLink}
           to="/list"
-          label="List"
+          label={t("list")}
           leftSection={<IconList size={18} stroke={1.75} />}
           rightSection={
             listCount > 0 &&
@@ -131,7 +135,7 @@ export function AppNav({ collapsed = false }) {
           active={listActive}
           variant="light"
           color="brand"
-          aria-label={listCount > 0 ? `List, ${listCount} items` : "List"}
+          aria-label={listAria}
         />
       }
     </Stack>

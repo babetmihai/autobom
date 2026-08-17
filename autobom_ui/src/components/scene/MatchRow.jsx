@@ -4,6 +4,7 @@ import { cn } from "../../lib/index.js"
 import { selectListQuantities } from "../../lib/list.js"
 import { formatPrice, resolveProductView } from "../../lib/products.js"
 import ProductActions from "../ProductActions.jsx"
+import { useTranslation } from "react-i18next"
 
 
 export default function MatchRow({
@@ -13,6 +14,7 @@ export default function MatchRow({
   inSketchup = true,
   glbSupported = true
 }) {
+  const { t } = useTranslation()
   const history = useHistory()
   const listQuantities = useSelector(() => selectListQuantities())
 
@@ -26,7 +28,7 @@ export default function MatchRow({
   const view = product ? resolveProductView(product) : null
 
   const { title: viewTitle, name: viewName, price, currency } = view || {}
-  const title = viewTitle || viewName || "Catalog item"
+  const title = viewTitle || viewName || t("catalog_item")
   const priceDisplay = formatPrice(price, currency)
   const thumbUrl = view?.imageUrl
 
@@ -37,7 +39,7 @@ export default function MatchRow({
     const from = sceneId ? `/scene-analyzer/${sceneId}` : "/scene-analyzer"
     history.push({
       pathname: `/product/${productId}`,
-      state: { from, fromLabel: "Scene" }
+      state: { from, fromLabel: "scene" }
     })
   }
 
@@ -59,7 +61,7 @@ export default function MatchRow({
         }}
         role="link"
         tabIndex={0}
-        aria-label={`Open ${title}, ${scorePercent}% match`}
+        aria-label={t("open_product_match", { name: title, percent: scorePercent })}
       >
         {thumbUrl &&
           <img
@@ -73,12 +75,12 @@ export default function MatchRow({
         }
         <div className="min-w-0 flex-1">
           <p className="m-0 truncate text-sm font-medium text-gray-800">{title}</p>
-          <p className="m-0 text-xs text-gray-500">{scorePercent}% match</p>
+          <p className="m-0 text-xs text-gray-500">{t("percent_match", { percent: scorePercent })}</p>
           {priceDisplay &&
             <p className="m-0 mt-0.5 text-xs font-semibold text-brand-500">{priceDisplay}</p>
           }
           {inSketchup && listCount > 0 &&
-            <p className="m-0 mt-0.5 text-xs font-medium text-green-800">In list: {listCount}</p>
+            <p className="m-0 mt-0.5 text-xs font-medium text-green-800">{t("in_list", { count: listCount })}</p>
           }
         </div>
       </div>

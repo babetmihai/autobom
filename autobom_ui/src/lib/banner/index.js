@@ -1,4 +1,5 @@
 import { notifications } from "@mantine/notifications"
+import i18n from "../i18n/index.js"
 
 const COLOR_BY_TYPE = {
   warning: "orange",
@@ -9,10 +10,9 @@ const COLOR_BY_TYPE = {
 
 export const showBanner = (type, message) => {
   const typeKey = typeof type === "string" && type.length ? type : "info"
-  const title = typeKey.charAt(0).toUpperCase() + typeKey.slice(1)
   notifications.show({
     color: COLOR_BY_TYPE[typeKey] || "blue",
-    title,
+    title: i18n.t(typeKey),
     message,
     autoClose: 3000
   })

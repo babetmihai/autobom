@@ -1,5 +1,6 @@
 import React from "react"
 import { Button, Group, Text, TextInput } from "@mantine/core"
+import { useTranslation } from "react-i18next"
 import { actions } from "../lib/store/index.js"
 import { hideModal } from "../lib/modals.js"
 import { importProductFromUrl } from "../lib/products.js"
@@ -9,6 +10,7 @@ import AppModal from "./AppModal.jsx"
 const appActions = actions.create("app")
 
 export default function ProductUrlImportModal({ onClose = hideModal }) {
+  const { t } = useTranslation()
   const importing = useLoader("products.importFromUrl")
   const [url, setUrl] = React.useState("")
 
@@ -22,12 +24,12 @@ export default function ProductUrlImportModal({ onClose = hideModal }) {
 
   return (
     <AppModal
-      name="Import from URL"
+      name={t("import_from_url")}
       onClose={onClose}
       footer={
         <Group gap="xs" justify="flex-end">
           <Button variant="default" disabled={importing} onClick={onClose}>
-            Cancel
+            {t("cancel")}
           </Button>
           <Button
             type="submit"
@@ -36,7 +38,7 @@ export default function ProductUrlImportModal({ onClose = hideModal }) {
             disabled={!url.trim()}
             loading={importing}
           >
-            {importing ? "Adding..." : "Add product"}
+            {(importing && t("adding")) || t("add_product")}
           </Button>
         </Group>
       }
@@ -47,7 +49,7 @@ export default function ProductUrlImportModal({ onClose = hideModal }) {
         onSubmit={onSubmit}
       >
         <TextInput
-          label="Product page URL"
+          label={t("product_page_url")}
           type="url"
           required
           autoFocus
@@ -57,7 +59,7 @@ export default function ProductUrlImportModal({ onClose = hideModal }) {
           onChange={(event) => setUrl(event.currentTarget.value)}
         />
         <Text size="xs" c="dimmed">
-          Adds a product record and scrapes the page in the background.
+          {t("import_from_url_hint")}
         </Text>
       </form>
     </AppModal>

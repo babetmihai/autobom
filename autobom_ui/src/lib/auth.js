@@ -8,6 +8,7 @@ import { actions } from "./store/index.js"
 import { getFirebaseAuth } from "./firebase.js"
 import { setLoader, clearLoader } from "./loaders.js"
 import { showBanner } from "./banner/index.js"
+import i18n from "./i18n/index.js"
 
 
 const authActions = actions.create("auth")
@@ -51,7 +52,7 @@ export const initAuth = () => {
 export const signInWithEmail = async (email, password) => {
   const auth = getFirebaseAuth()
   if (!auth) {
-    showBanner("error", "Firebase is not configured")
+    showBanner("error", i18n.t("firebase_not_configured"))
     return
   }
 
@@ -59,7 +60,7 @@ export const signInWithEmail = async (email, password) => {
   try {
     await signInWithEmailAndPassword(auth, email.trim(), password)
   } catch (error) {
-    showBanner("error", error.message || "Sign in failed")
+    showBanner("error", error.message || i18n.t("sign_in_failed"))
   } finally {
     clearLoader("auth.signIn")
   }
@@ -68,7 +69,7 @@ export const signInWithEmail = async (email, password) => {
 export const signUpWithEmail = async (email, password) => {
   const auth = getFirebaseAuth()
   if (!auth) {
-    showBanner("error", "Firebase is not configured")
+    showBanner("error", i18n.t("firebase_not_configured"))
     return
   }
 
@@ -76,7 +77,7 @@ export const signUpWithEmail = async (email, password) => {
   try {
     await createUserWithEmailAndPassword(auth, email.trim(), password)
   } catch (error) {
-    showBanner("error", error.message || "Sign up failed")
+    showBanner("error", error.message || i18n.t("sign_up_failed"))
   } finally {
     clearLoader("auth.signUp")
   }
@@ -90,7 +91,7 @@ export const signOut = async () => {
   try {
     await firebaseSignOut(auth)
   } catch (error) {
-    showBanner("error", error.message || "Sign out failed")
+    showBanner("error", error.message || i18n.t("sign_out_failed"))
   } finally {
     clearLoader("auth.signOut")
   }

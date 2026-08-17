@@ -13,6 +13,7 @@ import {
 } from "../lib/products"
 import ProductActions from "./ProductActions.jsx"
 import { cn, PRODUCT_SOURCE, STEP_STATUS } from "../lib/index.js"
+import { useTranslation } from "react-i18next"
 
 function ModelCard({
   model,
@@ -20,6 +21,7 @@ function ModelCard({
   glbSupported = true,
   inSketchup = true
 }) {
+  const { t } = useTranslation()
   const view = resolveProductView(model)
   const priceDisplay = formatPrice(view.price, view.currency)
   const dimensionsDisplay = formatDimensions(view.dimensions)
@@ -36,7 +38,7 @@ function ModelCard({
 
   const openProduct = () => {
     const from = history.location.pathname
-    const fromLabel = (from.startsWith("/scene-analyzer") && "Scene") || "Catalog"
+    const fromLabel = (from.startsWith("/scene-analyzer") && "scene") || "catalog"
     history.push({
       pathname: `/product/${view.id}`,
       state: { from, fromLabel }
@@ -62,7 +64,7 @@ function ModelCard({
         }}
         role="link"
         tabIndex={0}
-        aria-label={`Open ${view.title || view.name || view.id}`}
+        aria-label={t("open_product", { name: view.title || view.name || view.id })}
       >
         <div className="relative aspect-[4/3] shrink-0 overflow-hidden bg-gray-100">
           {sourceLabel &&
@@ -87,7 +89,7 @@ function ModelCard({
           {view.imageUrl &&
             <img
               src={view.imageUrl}
-              alt={view.title || view.name || "Model"}
+              alt={view.title || view.name || t("model")}
               loading="lazy"
               className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
             />
@@ -97,12 +99,12 @@ function ModelCard({
               {scrapePending &&
                 <>
                   <Loader size="sm" color="brand" />
-                  <Text size="xs" c="dimmed" ta="center">Scraping...</Text>
+                  <Text size="xs" c="dimmed" ta="center">{t("scraping")}</Text>
                 </>
               }
               {!scrapePending && scrapeFailed &&
                 <>
-                  <Text size="xs" c="red" ta="center">Scrape failed</Text>
+                  <Text size="xs" c="red" ta="center">{t("scrape_failed")}</Text>
                   <Button
                     size="compact-xs"
                     variant="default"
@@ -112,7 +114,7 @@ function ModelCard({
                       void retryProduct(view)
                     }}
                   >
-                    Retry
+                    {t("retry")}
                   </Button>
                 </>
               }
@@ -134,7 +136,7 @@ function ModelCard({
                   )}
                   style={colorHex ? { backgroundColor: colorHex } : undefined}
                   title={view.color}
-                  aria-label={`Color: ${view.color}`}
+                  aria-label={t("color", { color: view.color })}
                 />
                 <span className="truncate text-xs capitalize text-gray-600">{view.color}</span>
               </div>
@@ -193,7 +195,7 @@ function ModelCard({
               {tagOverflow > 0 &&
                 <span
                   className="text-[0.6875rem] font-medium text-gray-400"
-                  title={`${tagOverflow} more tags`}
+                  title={t("more_tags", { count: tagOverflow })}
                 >
                   +{tagOverflow}
                 </span>
@@ -205,7 +207,7 @@ function ModelCard({
           }
           {inSketchup && listCount > 0 &&
             <div className="mt-auto pt-2 text-xs text-gray-500">
-              <span className="font-medium text-green-700">In list: {listCount}</span>
+              <span className="font-medium text-green-700">{t("in_list", { count: listCount })}</span>
             </div>
           }
         </div>

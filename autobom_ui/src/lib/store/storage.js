@@ -6,7 +6,8 @@ import _ from "lodash"
 const STORE_VERSION = 1
 const PERSISTENT_PATHS = [
   "auth",
-  "app.sidebarCollapsed"
+  "app.sidebarCollapsed",
+  "language"
 ]
 
 

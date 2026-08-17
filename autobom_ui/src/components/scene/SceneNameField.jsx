@@ -2,9 +2,11 @@ import React from "react"
 import { TextInput } from "@mantine/core"
 import { resolveSceneName, updateSceneName } from "../../lib/scenes.js"
 import { useLoader } from "../../lib/loaders.js"
+import { useTranslation } from "react-i18next"
 
 
 export default function SceneNameField({ scene }) {
+  const { t } = useTranslation()
   const displayName = resolveSceneName(scene)
   const [draft, setDraft] = React.useState(displayName)
   const saving = useLoader(`scenes.rename.${scene.id}`)
@@ -33,7 +35,7 @@ export default function SceneNameField({ scene }) {
   return (
     <TextInput
       id={`scene-name-${scene.id}`}
-      label="Scene name"
+      label={t("scene_name")}
       value={draft}
       disabled={saving}
       mb="md"

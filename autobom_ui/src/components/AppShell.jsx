@@ -1,6 +1,7 @@
 import { ActionIcon, Box, Button, Group, Stack, Text, Title, Tooltip } from "@mantine/core"
 import { useSelector } from "react-redux"
 import { IconLayoutSidebarLeftCollapse, IconLayoutSidebarLeftExpand, IconLogout } from "@tabler/icons-react"
+import { useTranslation } from "react-i18next"
 import { AppNav } from "./AppNav.jsx"
 import { selectAuthEmail, signOut } from "../lib/auth.js"
 import { useLoader } from "../lib/loaders.js"
@@ -10,6 +11,7 @@ import { cn } from "../lib/index.js"
 const appActions = actions.create("app")
 
 export function AppShell({ header, children }) {
+  const { t } = useTranslation()
   const { sidebarCollapsed = false } = useSelector(() => appActions.get())
   const email = useSelector(() => selectAuthEmail())
   const signingOut = useLoader("auth.signOut")
@@ -41,7 +43,7 @@ export function AppShell({ header, children }) {
             </Title>
           }
           <Tooltip
-            label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            label={collapsed ? t("expand_sidebar") : t("collapse_sidebar")}
             position="right"
             withArrow
           >
@@ -50,7 +52,7 @@ export function AppShell({ header, children }) {
               color="gray"
               size="md"
               onClick={toggleSidebar}
-              aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+              aria-label={collapsed ? t("expand_sidebar") : t("collapse_sidebar")}
               aria-expanded={!collapsed}
             >
               {collapsed && <IconLayoutSidebarLeftExpand size={18} stroke={1.75} />}
@@ -79,13 +81,17 @@ export function AppShell({ header, children }) {
             </Text>
           }
           {collapsed &&
-            <Tooltip label={email ? `Sign out (${email})` : "Sign out"} position="right" withArrow>
+            <Tooltip
+              label={email ? t("sign_out_with_email", { email }) : t("sign_out")}
+              position="right"
+              withArrow
+            >
               <ActionIcon
                 variant="default"
                 size="lg"
                 loading={signingOut}
                 onClick={() => void signOut()}
-                aria-label="Sign out"
+                aria-label={t("sign_out")}
               >
                 <IconLogout size={18} stroke={1.75} />
               </ActionIcon>
@@ -98,7 +104,7 @@ export function AppShell({ header, children }) {
               loading={signingOut}
               onClick={() => void signOut()}
             >
-              Sign out
+              {t("sign_out")}
             </Button>
           }
         </Stack>

@@ -1,4 +1,5 @@
 import { showBanner } from "./banner"
+import i18n from "./i18n/index.js"
 
 const escapeCsvName = (name) => `"${String(name ?? "").replace(/"/g, "\"\"")}"`
 
@@ -34,28 +35,28 @@ const buildBOMCsv = (list, quantities) => {
   const grandTotal = lineData.map(({ lineTotal }) => lineTotal).reduce((sum, n) => sum + n, 0)
 
   const headerRow = [
-    "Product Name",
-    "Product ID",
-    "Quantity",
-    "Currency",
-    "Unit Price",
-    "Total"
+    i18n.t("product_name"),
+    i18n.t("product_id"),
+    i18n.t("quantity"),
+    i18n.t("currency"),
+    i18n.t("unit_price"),
+    i18n.t("total")
   ].join(",")
 
-  const footerRow = ["", "", "", "", "GRAND TOTAL:", grandTotal.toFixed(2)].join(",")
+  const footerRow = ["", "", "", "", i18n.t("grand_total_csv"), grandTotal.toFixed(2)].join(",")
   return { content: [headerRow, ...lines, footerRow].join("\n"), itemCount: lines.length }
 }
 
 export const exportBOM = ({ quantities, list }) => {
   const bom = buildBOMCsv(list, quantities)
   if (!bom) {
-    showBanner("info", "No products in the list to export.")
+    showBanner("info", i18n.t("no_products_to_export"))
     return
   }
 
   const date = new Date().toISOString().split("T")[0]
   downloadCSV(bom.content, `bill-of-materials-${date}.csv`)
-  showBanner("success", `BOM exported with ${bom.itemCount} items.`)
+  showBanner("success", i18n.t("bom_exported", { count: bom.itemCount }))
 }
 
 const downloadCSV = (content, filename) => {

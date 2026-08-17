@@ -1,11 +1,14 @@
 import { ActionIcon, Loader } from "@mantine/core"
 import { IconPlus } from "@tabler/icons-react"
+import { useTranslation } from "react-i18next"
 
-export default function InsertButton({ onClick, className, title = "Insert model", disabled, loading }) {
+export default function InsertButton({ onClick, className, title, disabled, loading }) {
+  const { t } = useTranslation()
+  const label = title || t("insert_model")
   return (
     <ActionIcon
-      title={title}
-      aria-label={title}
+      title={label}
+      aria-label={label}
       disabled={disabled || loading}
       color="brand"
       variant="filled"

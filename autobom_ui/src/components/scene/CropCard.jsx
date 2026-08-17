@@ -5,6 +5,7 @@ import {
   sceneMatchingProcessing
 } from "../../lib/scenes.js"
 import MatchRow from "./MatchRow.jsx"
+import { useTranslation } from "react-i18next"
 
 
 export default function CropCard({
@@ -19,6 +20,7 @@ export default function CropCard({
   inSketchup = true,
   glbSupported = true
 }) {
+  const { t } = useTranslation()
   const sorted = _.orderBy(matches, "score", "desc")
     .filter((match) => (match.score || 0) >= 0.51)
     .slice(0, 5)
@@ -39,7 +41,7 @@ export default function CropCard({
         {crop.url &&
           <img
             src={crop.url}
-            alt={crop.label || "Crop"}
+            alt={crop.label || t("crop")}
             className="aspect-square h-[7.8rem] w-[7.8rem] shrink-0 object-cover sm:h-[9.1rem] sm:w-[9.1rem]"
           />
         }
@@ -49,11 +51,11 @@ export default function CropCard({
         <div className="min-w-0 flex-1 p-3">
           <div className="mb-3">
             <p className="m-0 text-sm font-medium capitalize text-gray-800">
-              {crop.label || "Furniture"}
+              {crop.label || t("furniture")}
             </p>
             {confidencePercent != null && (
               <p className="m-0 text-xs text-gray-500">
-                Detection {confidencePercent}%
+                {t("detection_percent", { percent: confidencePercent })}
               </p>
             )}
           </div>
@@ -74,11 +76,11 @@ export default function CropCard({
           )}
 
           {sorted.length === 0 && sceneMatchingComplete(sceneStatus) && (
-            <p className="m-0 text-xs text-gray-500">No catalog matches found</p>
+            <p className="m-0 text-xs text-gray-500">{t("no_catalog_matches_found")}</p>
           )}
 
           {sorted.length === 0 && sceneMatchingProcessing(sceneStatus) && (
-            <p className="m-0 text-xs text-gray-500">Finding matches...</p>
+            <p className="m-0 text-xs text-gray-500">{t("finding_matches")}</p>
           )}
         </div>
       </div>

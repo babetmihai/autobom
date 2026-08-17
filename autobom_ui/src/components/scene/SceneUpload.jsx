@@ -5,9 +5,11 @@ import { IconUpload } from "@tabler/icons-react"
 import { cn } from "../../lib/index.js"
 import { uploadScene } from "../../lib/scenes.js"
 import { useLoader } from "../../lib/loaders.js"
+import { useTranslation } from "react-i18next"
 
 
 export default function SceneUpload() {
+  const { t } = useTranslation()
   const history = useHistory()
   const uploading = useLoader("scenes.upload")
   const inputRef = React.useRef(null)
@@ -54,16 +56,16 @@ export default function SceneUpload() {
         {uploading &&
           <div className="flex max-w-full flex-wrap items-center justify-center gap-2 px-2 text-gray-600">
             <Loader size="sm" color="brand" />
-            <Text size="sm">Uploading scene...</Text>
+            <Text size="sm">{t("uploading_scene")}</Text>
           </div>
         }
         {!uploading &&
           <>
             <IconUpload size={40} stroke={1.5} className="mb-2 text-brand-500" />
             <Text fw={500} size="sm" className="max-w-xs px-2 sm:max-w-md sm:text-base">
-              Drop a room photo here or tap to browse
+              {t("drop_room_photo")}
             </Text>
-            <Text size="xs" c="dimmed" mt={4}>JPEG, PNG, or WebP</Text>
+            <Text size="xs" c="dimmed" mt={4}>{t("jpeg_png_or_webp")}</Text>
           </>
         }
       </div>

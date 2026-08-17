@@ -35,9 +35,11 @@ import ProductPageActions from "../components/ProductPageActions.jsx"
 import { showProductModal } from "../components/ProductModal.jsx"
 import { cn, PRODUCT_SOURCE, STEP_STATUS } from "../lib/index.js"
 import { glbNativeImport, isInSketchup, useSketchupEnvListener } from "../lib/sketchup.js"
+import { useTranslation } from "react-i18next"
 
 
 export default function ProductPage() {
+  const { t } = useTranslation()
   const { productId } = useParams()
   const location = useLocation()
   const [sketchupEnv, setSketchupEnv] = React.useState(null)
@@ -48,8 +50,8 @@ export default function ProductPage() {
 
   const inSketchup = isInSketchup()
   const glbSupported = !inSketchup || !sketchupEnv || glbNativeImport(sketchupEnv)
-  const backTo = location.state?.from || "/"
-  const backLabel = location.state?.fromLabel || "Catalog"
+  const { from = "/", fromLabel = "catalog" } = location.state || {}
+  const backLabel = t(fromLabel)
 
   React.useEffect(() => {
     void fetchProduct(productId)
@@ -75,7 +77,7 @@ export default function ProductPage() {
     <AppShell header={<AppHeader />}>
       <Anchor
         component={Link}
-        to={backTo}
+        to={from}
         size="sm"
         mb="md"
         className="inline-flex items-center gap-1"
@@ -88,7 +90,7 @@ export default function ProductPage() {
         <Center py={48}>
           <div className="text-center">
             <Loader color="brand" mb="md" />
-            <Text c="dimmed">Loading product...</Text>
+            <Text c="dimmed">{t("loading_product")}</Text>
           </div>
         </Center>
       }
@@ -100,7 +102,7 @@ export default function ProductPage() {
           radius="md"
           className="border-dashed text-center"
         >
-          <Text fw={500} size="sm">Product not found</Text>
+          <Text fw={500} size="sm">{t("product_not_found")}</Text>
         </Paper>
       }
 
@@ -125,7 +127,7 @@ export default function ProductPage() {
               {view.imageUrl &&
                 <img
                   src={view.imageUrl}
-                  alt={view.title || view.name || "Model"}
+                  alt={view.title || view.name || t("model")}
                   className="h-full w-full object-cover"
                 />
               }
@@ -139,13 +141,13 @@ export default function ProductPage() {
                   }
                   {scrapePending &&
                     <Text size="xs" c="dimmed" ta="center">
-                      Scraping product page...
+                      {t("scraping_product_page")}
                     </Text>
                   }
                   {scrapeFailed &&
                     <>
                       <Text size="xs" c="red" ta="center">
-                        Could not scrape this URL
+                        {t("could_not_scrape_this_url")}
                       </Text>
                       <Button
                         variant="default"
@@ -156,7 +158,7 @@ export default function ProductPage() {
                           void retryProduct(view)
                         }}
                       >
-                        Retry
+                        {t("retry")}
                       </Button>
                     </>
                   }
@@ -176,7 +178,7 @@ export default function ProductPage() {
                   leftSection={<IconPencil size={16} stroke={1.75} />}
                   onClick={() => showProductModal({ productId })}
                 >
-                  Edit
+                  {t("edit")}
                 </Button>
               </div>
               {fromUrl && view.sourceUrl &&
@@ -222,7 +224,7 @@ export default function ProductPage() {
                         )}
                         style={colorHex ? { backgroundColor: colorHex } : undefined}
                         title={view.color}
-                        aria-label={`Color: ${view.color}`}
+                        aria-label={t("color", { color: view.color })}
                       />
                       <span className="truncate text-sm capitalize text-gray-600">{view.color}</span>
                     </div>
@@ -269,7 +271,7 @@ export default function ProductPage() {
                   fw={500}
                   c="green.8"
                 >
-                  In list: {listCount}
+                  {t("in_list", { count: listCount })}
                 </Text>
               }
 

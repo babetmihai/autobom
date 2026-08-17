@@ -1,5 +1,6 @@
 import { Component } from "react"
 import { Alert, Button, Code, Text } from "@mantine/core"
+import i18n from "./lib/i18n/index.js"
 
 export class ErrorBoundary extends Component {
   constructor(props) {
@@ -33,18 +34,18 @@ export class ErrorBoundary extends Component {
         color="red"
         m="md"
         maw={48 * 16}
-        title="Something went wrong"
+        title={i18n.t("something_went_wrong")}
         role="alert"
       >
         <Text size="sm" c="dimmed" mb="sm">
-          The app hit a React error. Details below.
+          {i18n.t("react_error_details")}
         </Text>
         <Code block mb="sm">
           {error.message || String(error)}
         </Code>
         {stack &&
           <details className="mb-3">
-            <summary className="cursor-pointer font-semibold text-gray-700">Stack trace</summary>
+            <summary className="cursor-pointer font-semibold text-gray-700">{i18n.t("stack_trace")}</summary>
             <Code block mt="xs" className="text-[0.6875rem]">
               {stack}
             </Code>
@@ -52,14 +53,14 @@ export class ErrorBoundary extends Component {
         }
         {errorInfo?.componentStack &&
           <details className="mb-3">
-            <summary className="cursor-pointer font-semibold text-gray-700">Component stack</summary>
+            <summary className="cursor-pointer font-semibold text-gray-700">{i18n.t("component_stack")}</summary>
             <Code block mt="xs" className="text-[0.6875rem]">
               {errorInfo.componentStack}
             </Code>
           </details>
         }
         <Button variant="default" mt="xs" onClick={this.handleReload}>
-          Reload
+          {i18n.t("reload")}
         </Button>
       </Alert>
     )

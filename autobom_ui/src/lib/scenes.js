@@ -10,6 +10,7 @@ import { DEFAULT_SCENE_STATUS, EMPTY_ARRAY, FALSE, STEP_STATUS, TRUE } from "./i
 import { showBanner } from "./banner/index.js"
 import { mapRawProduct } from "./products.js"
 import { selectAuthUid } from "./auth.js"
+import i18n from "./i18n/index.js"
 
 
 const sceneService = createServices("scenes")
@@ -22,12 +23,12 @@ const sceneMatchProductActions = actions.create("sceneMatchProducts")
 const SCENES_PAGE_SIZE = 50
 
 const defaultSceneName = (createdAt = Date.now()) => {
-  const label = new Date(createdAt).toLocaleDateString(undefined, {
+  const label = new Date(createdAt).toLocaleDateString(i18n.language, {
     month: "short",
     day: "numeric",
     year: "numeric"
   })
-  return `Room scene · ${label}`
+  return i18n.t("room_scene", { date: label })
 }
 
 const nameFromFile = (file) => {
@@ -158,11 +159,11 @@ export const uploadScene = async (file) => {
   const storage = getFirebaseStorage()
   const createdBy = selectAuthUid()
   if (!storage) {
-    showBanner("error", "Firebase is not configured")
+    showBanner("error", i18n.t("firebase_not_configured"))
     return
   }
   if (!createdBy) {
-    showBanner("error", "Sign in required")
+    showBanner("error", i18n.t("sign_in_required"))
     return
   }
 
@@ -182,7 +183,7 @@ export const uploadScene = async (file) => {
       if (existing.matches?.length) {
         await hydrateMatches(existing.matches)
       }
-      showBanner("info", "This photo was already uploaded — opening existing scene")
+      showBanner("info", i18n.t("photo_already_uploaded"))
       return id
     }
 
@@ -229,7 +230,7 @@ export const uploadScene = async (file) => {
     })
     return id
   } catch (error) {
-    showBanner("error", error.message || "Upload failed")
+    showBanner("error", error.message || i18n.t("upload_failed"))
   } finally {
     clearLoader("scenes.upload")
   }
@@ -275,7 +276,7 @@ export const updateSceneName = async (sceneId, name) => {
       list.map((scene) => scene.id === sceneId ? { ...scene, name: trimmed, updatedAt } : scene)
     )
   } catch (error) {
-    showBanner("error", error.message || "Could not rename scene")
+    showBanner("error", error.message || i18n.t("could_not_rename_scene"))
   } finally {
     clearLoader(`scenes.rename.${sceneId}`)
   }
@@ -285,13 +286,13 @@ export const sceneStatusLabel = (status) => {
   const { detection, matching } = normalizeSceneStatus(status)
 
   if (detection === STEP_STATUS.FAILED || matching === STEP_STATUS.FAILED) {
-    return "Analysis failed"
+    return i18n.t("analysis_failed")
   }
-  if (matching === STEP_STATUS.COMPLETED) return "Analysis complete"
-  if (matching === STEP_STATUS.PROCESSING) return "Matching catalog items"
-  if (detection === STEP_STATUS.PROCESSING) return "Detecting furniture"
-  if (detection === STEP_STATUS.PENDING) return "Queued for analysis"
-  return "Waiting"
+  if (matching === STEP_STATUS.COMPLETED) return i18n.t("analysis_complete")
+  if (matching === STEP_STATUS.PROCESSING) return i18n.t("matching_catalog_items")
+  if (detection === STEP_STATUS.PROCESSING) return i18n.t("detecting_furniture")
+  if (detection === STEP_STATUS.PENDING) return i18n.t("queued_for_analysis")
+  return i18n.t("waiting")
 }
 
 export const sceneIsQueued = (status) => {
@@ -341,7 +342,7 @@ export const retryScene = async (scene) => {
       list.map((item) => item.id === id ? { ...item, status: nextStatus, updatedAt: patch.updatedAt } : item)
     )
   } catch (error) {
-    showBanner("error", error.message || "Could not retry analysis")
+    showBanner("error", error.message || i18n.t("could_not_retry_analysis"))
   } finally {
     clearLoader(`scenes.retry.${id}`)
   }
@@ -368,12 +369,12 @@ export const formatSceneRelativeDate = (timestamp) => {
   const hour = 60 * minute
   const day = 24 * hour
 
-  if (diff < minute) return "Just now"
-  if (diff < hour) return `${Math.floor(diff / minute)}m ago`
-  if (diff < day) return `${Math.floor(diff / hour)}h ago`
-  if (diff < 7 * day) return `${Math.floor(diff / day)}d ago`
+  if (diff < minute) return i18n.t("just_now")
+  if (diff < hour) return i18n.t("minutes_ago", { count: Math.floor(diff / minute) })
+  if (diff < day) return i18n.t("hours_ago", { count: Math.floor(diff / hour) })
+  if (diff < 7 * day) return i18n.t("days_ago", { count: Math.floor(diff / day) })
 
-  return new Date(timestamp).toLocaleDateString(undefined, {
+  return new Date(timestamp).toLocaleDateString(i18n.language, {
     month: "short",
     day: "numeric",
     year: "numeric"

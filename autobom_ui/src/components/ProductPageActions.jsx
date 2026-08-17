@@ -1,5 +1,6 @@
 import { Button, Group } from "@mantine/core"
 import { IconExternalLink } from "@tabler/icons-react"
+import { useTranslation } from "react-i18next"
 import {
   addOrImportProduct,
   importProductBundle,
@@ -14,6 +15,7 @@ export default function ProductPageActions({
   glbSupported = true,
   className
 }) {
+  const { t } = useTranslation()
   const productId = view?.id
   const importingGlb = useLoader(productId ? `importingModel.glb.${productId}` : "")
   const importingDae = useLoader(productId ? `importingModel.dae.${productId}` : "")
@@ -29,17 +31,17 @@ export default function ProductPageActions({
   const importing = importingGlb || importingDae
 
   const primaryLabel = (() => {
-    if (useGlbImport) return "Insert GLB model"
-    if (useBundleImport) return "Insert Collada model"
-    if (glbBlocked) return "GLB requires SketchUp 2025+"
-    return "No importable model"
+    if (useGlbImport) return t("insert_glb_model")
+    if (useBundleImport) return t("insert_collada_model")
+    if (glbBlocked) return t("glb_requires_sketchup_2025_short")
+    return t("no_importable_model")
   })()
 
   const primaryTitle = (() => {
-    if (useGlbImport) return "Insert GLB model"
-    if (useBundleImport) return "Insert Collada model"
-    if (glbBlocked) return "GLB import requires SketchUp 2025 or newer."
-    return "No importable model"
+    if (useGlbImport) return t("insert_glb_model")
+    if (useBundleImport) return t("insert_collada_model")
+    if (glbBlocked) return t("glb_requires_sketchup_2025")
+    return t("no_importable_model")
   })()
 
   return (
@@ -58,23 +60,23 @@ export default function ProductPageActions({
       {!inSketchup && glbUrl &&
         <Button
           variant="default"
-          title="Download GLB model"
+          title={t("download_glb_model")}
           disabled={importing}
           loading={importingGlb}
           onClick={() => importProductGlb(view)}
         >
-          Download GLB
+          {t("download_glb")}
         </Button>
       }
       {!inSketchup && bundleUrl &&
         <Button
           variant="default"
-          title="Download COLLADA bundle (zip)"
+          title={t("download_collada_bundle")}
           disabled={importing}
           loading={importingDae}
           onClick={() => importProductBundle(view)}
         >
-          Download COLLADA bundle
+          {t("download_collada_bundle_label")}
         </Button>
       }
       {view.productUrl &&
@@ -84,10 +86,10 @@ export default function ProductPageActions({
           target="_blank"
           rel="noopener noreferrer"
           variant="default"
-          title="View on store"
+          title={t("view_on_store")}
           leftSection={<IconExternalLink size={16} stroke={1.75} />}
         >
-          View on store
+          {t("view_on_store")}
         </Button>
       }
     </Group>

@@ -31,6 +31,7 @@ import ModelCard from "../components/ModelCard.jsx"
 import ProductUrlImport from "../components/ProductUrlImport.jsx"
 import { showProductModal } from "../components/ProductModal.jsx"
 import { glbNativeImport, isInSketchup, useSketchupEnvListener } from "../lib/sketchup.js"
+import { useTranslation } from "react-i18next"
 import _ from "lodash"
 
 const skeletonCards = [0, 1, 2, 3, 4, 5]
@@ -38,6 +39,7 @@ const skeletonCards = [0, 1, 2, 3, 4, 5]
 const appActions = actions.create("app")
 
 export default function CatalogPage() {
+  const { t } = useTranslation()
   const {
     searchQuery = "",
     categoryId = "",
@@ -59,7 +61,7 @@ export default function CatalogPage() {
     hasGlb: glbSupported && hasGlb,
     hasBundle: !glbSupported && hasGlb
   }
-  const modelFilterLabel = (glbSupported && "GLB") || "DAE"
+  const modelFilterLabel = (glbSupported && t("glb")) || t("dae")
 
   React.useEffect(() => {
     const delay = searchQuery.trim() ? 300 : 0
@@ -92,7 +94,7 @@ export default function CatalogPage() {
     <AppShell header={<AppHeader />}>
       <Stack gap="md" mb="md">
         <TextInput
-          placeholder="Search models..."
+          placeholder={t("search_models")}
           value={searchQuery}
           onChange={(event) => appActions.set("searchQuery", event.currentTarget.value)}
           leftSection={<IconSearch size={18} stroke={1.75} />}
@@ -105,7 +107,7 @@ export default function CatalogPage() {
             variant="outline"
             color="brand"
           >
-            All
+            {t("all")}
           </Chip>
           {Object.entries(CATEGORIES).map(([id, name]) => (
             <Chip
@@ -127,9 +129,9 @@ export default function CatalogPage() {
           leftSection={loading ? <Loader size={14} /> : <IconRefresh size={16} stroke={1.75} />}
           onClick={() => fetchProducts({ reset: true, ...productFilters })}
           disabled={loading}
-          aria-label="Refresh models"
+          aria-label={t("refresh_models")}
         >
-          Refresh
+          {t("refresh")}
         </Button>
         <Button
           variant={hasGlb ? "light" : "default"}
@@ -145,7 +147,7 @@ export default function CatalogPage() {
             onSubmit: () => appActions.set("hasGlb", false)
           })}
         >
-          New
+          {t("new")}
         </Button>
         <ProductUrlImport />
       </Group>
@@ -195,18 +197,18 @@ export default function CatalogPage() {
             onClick={() => loadMoreProducts(productFilters)}
             loading={loadingMore}
           >
-            Load more
+            {t("load_more")}
           </Button>
         </Center>
       }
       {listReady && listEmpty && hasFilters &&
         <Text ta="center" c="dimmed" py="xl">
-          No models match your filters
+          {t("no_models_match_your_filters")}
         </Text>
       }
       {listReady && listEmpty && !hasFilters &&
         <Text ta="center" c="dimmed" py="xl">
-          No models loaded yet...
+          {t("no_models_loaded_yet")}
         </Text>
       }
     </AppShell>

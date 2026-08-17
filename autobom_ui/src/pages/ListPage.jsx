@@ -15,8 +15,10 @@ import {
   selectProducts
 } from "../lib/products.js"
 import { useTagListener } from "../lib/tags.js"
+import { useTranslation } from "react-i18next"
 
 export default function ListPage() {
+  const { t } = useTranslation()
   const listQuantities = useSelector(() => selectListQuantities())
   const products = useSelector(() => selectProducts())
 
@@ -68,8 +70,8 @@ export default function ListPage() {
     <AppShell
       header={
         <PageHeader
-          title="List"
-          description="Quantities reflect models placed in your SketchUp file."
+          title={t("list")}
+          description={t("list_description")}
         />
       }
     >
@@ -80,7 +82,7 @@ export default function ListPage() {
           onClick={() => exportBOM({ quantities: listQuantities, list: listForBom })}
           disabled={isEmpty}
         >
-          Export BOM
+          {t("export_bom")}
         </Button>
       </Group>
 
@@ -91,9 +93,9 @@ export default function ListPage() {
           radius="md"
           className="border-dashed text-center"
         >
-          <Text fw={500} size="sm">Your list is empty</Text>
+          <Text fw={500} size="sm">{t("your_list_is_empty")}</Text>
           <Text size="sm" c="dimmed" mt="xs">
-            Import catalog models into SketchUp to add them here.
+            {t("import_catalog_models_hint")}
           </Text>
         </Paper>
       }
@@ -122,7 +124,7 @@ export default function ListPage() {
                     </div>
                     <div className="min-w-0 flex-1">
                       {loading && !view &&
-                        <Text size="sm" c="dimmed">Loading…</Text>
+                        <Text size="sm" c="dimmed">{t("loading")}</Text>
                       }
                       {view &&
                         <>
@@ -130,7 +132,7 @@ export default function ListPage() {
                             component={Link}
                             to={{
                               pathname: `/product/${id}`,
-                              state: { from: "/list", fromLabel: "List" }
+                              state: { from: "/list", fromLabel: "list" }
                             }}
                             className="block truncate text-sm font-semibold text-gray-800"
                           >
@@ -175,7 +177,7 @@ export default function ListPage() {
 
           {hasPricedLines &&
             <div className="flex items-center justify-end gap-3 border-t border-gray-100 bg-gray-50 px-4 py-3">
-              <Text size="sm" fw={500} c="dimmed">Grand total</Text>
+              <Text size="sm" fw={500} c="dimmed">{t("grand_total")}</Text>
               <Text
                 size="md"
                 fw={700}
@@ -192,7 +194,7 @@ export default function ListPage() {
       {isLoading &&
         <Group gap="xs" mt="sm">
           <Loader size="sm" />
-          <Text size="sm" c="dimmed">Loading product details…</Text>
+          <Text size="sm" c="dimmed">{t("loading_product_details")}</Text>
         </Group>
       }
     </AppShell>

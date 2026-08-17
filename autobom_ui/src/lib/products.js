@@ -15,6 +15,7 @@ import { v7 as uuidv7 } from "uuid"
 import sketchup from "./sketchup.js"
 import { showBanner } from "./banner/index.js"
 import { selectAuthUid } from "./auth.js"
+import i18n from "./i18n/index.js"
 import React from "react"
 import { useSelector } from "react-redux"
 import { deleteField, onSnapshot, setDoc, updateDoc } from "firebase/firestore"
@@ -176,7 +177,7 @@ export const fetchProduct = async (id) => {
   try {
     const raw = await productService.get(id)
     if (!raw) {
-      showBanner("error", "Product not found")
+      showBanner("error", i18n.t("product_not_found"))
       return null
     }
 
@@ -187,7 +188,7 @@ export const fetchProduct = async (id) => {
     actions.update("products", (products = {}) => ({ ...products, [id]: item }))
     return item
   } catch (error) {
-    showBanner("error", error.message || "Could not load product")
+    showBanner("error", error.message || i18n.t("could_not_load_product"))
     return null
   } finally {
     clearLoader(`product.${id}`)
@@ -271,8 +272,8 @@ export const hasFailedSteps = (product) => {
 export const retryProduct = async (product) => {
   const { id, status } = product || {}
   const db = getFirestoreDb()
-  if (!db) throw new Error("Firebase is not configured")
-  if (!id) throw new Error("Product id is required")
+  if (!db) throw new Error(i18n.t("firebase_not_configured"))
+  if (!id) throw new Error(i18n.t("product_id_required"))
 
   const failedSteps = _.keys(status || {}).filter((key) => status[key] === STEP_STATUS.FAILED)
   if (!failedSteps.length) return
@@ -351,13 +352,13 @@ const formValuesToPayload = (values) => {
 export const createProduct = async (values) => {
   const createdBy = selectAuthUid()
   const db = getFirestoreDb()
-  if (!db) throw new Error("Firebase is not configured")
-  if (!createdBy) throw new Error("Sign in required")
+  if (!db) throw new Error(i18n.t("firebase_not_configured"))
+  if (!createdBy) throw new Error(i18n.t("sign_in_required"))
 
   const id = uuidv7()
   const now = Date.now()
   const payload = formValuesToPayload(values)
-  if (!payload.name) throw new Error("Name is required")
+  if (!payload.name) throw new Error(i18n.t("name_is_required"))
 
   const raw = {
     _active: TRUE,
@@ -372,17 +373,17 @@ export const createProduct = async (values) => {
   await setDoc(getDocRef("products", id), raw)
   applyProductSnapshot(id, raw)
   void wakeTicker()
-  showBanner("success", "Product created")
+  showBanner("success", i18n.t("product_created"))
   return selectProduct(id)
 }
 
 export const updateProduct = async (id, values) => {
   const db = getFirestoreDb()
-  if (!db) throw new Error("Firebase is not configured")
-  if (!id) throw new Error("Product id is required")
+  if (!db) throw new Error(i18n.t("firebase_not_configured"))
+  if (!id) throw new Error(i18n.t("product_id_required"))
 
   const payload = formValuesToPayload(values)
-  if (!payload.name) throw new Error("Name is required")
+  if (!payload.name) throw new Error(i18n.t("name_is_required"))
 
   const patch = {
     ...payload,
@@ -403,21 +404,21 @@ export const updateProduct = async (id, values) => {
       })
     }
   })
-  showBanner("success", "Product saved")
+  showBanner("success", i18n.t("product_saved"))
   return selectProduct(id)
 }
 
 export const deleteProduct = async (id) => {
   const db = getFirestoreDb()
-  if (!db) throw new Error("Firebase is not configured")
-  if (!id) throw new Error("Product id is required")
+  if (!db) throw new Error(i18n.t("firebase_not_configured"))
+  if (!id) throw new Error(i18n.t("product_id_required"))
 
   await updateDoc(getDocRef("products", id), {
     _active: deleteField(),
     updatedAt: Date.now()
   })
   actions.unset(`products.${id}`)
-  showBanner("success", "Product deleted")
+  showBanner("success", i18n.t("product_deleted"))
 }
 
 export const importProductFromUrl = async (url) => {
@@ -425,15 +426,15 @@ export const importProductFromUrl = async (url) => {
   const sourceUrl = (url || "").trim()
   const db = getFirestoreDb()
   if (!db) {
-    showBanner("error", "Firebase is not configured")
+    showBanner("error", i18n.t("firebase_not_configured"))
     return null
   }
   if (!createdBy) {
-    showBanner("error", "Sign in required")
+    showBanner("error", i18n.t("sign_in_required"))
     return null
   }
   if (!sourceUrl) {
-    showBanner("error", "Enter a product URL")
+    showBanner("error", i18n.t("enter_a_product_url"))
     return null
   }
 
@@ -442,13 +443,13 @@ export const importProductFromUrl = async (url) => {
     const id = await hashSourceUrl(sourceUrl)
     const cached = selectProduct(id)
     if (cached) {
-      showBanner("info", "Product already imported")
+      showBanner("info", i18n.t("product_already_imported"))
       return id
     }
 
     const now = Date.now()
     const storeName = hostFromUrl(sourceUrl)
-    const name = `Importing from ${storeName}`
+    const name = i18n.t("importing_from", { store: storeName })
     const raw = {
       _active: TRUE,
       id,
@@ -467,10 +468,10 @@ export const importProductFromUrl = async (url) => {
     await setDoc(getDocRef("products", id), raw)
     applyProductSnapshot(id, raw)
     void wakeTicker()
-    showBanner("success", "Product added — scraping in background")
+    showBanner("success", i18n.t("product_added_scraping"))
     return id
   } catch (error) {
-    showBanner("error", error.message || "Import failed")
+    showBanner("error", error.message || i18n.t("import_failed"))
     return null
   } finally {
     clearLoader("products.importFromUrl")
@@ -547,12 +548,12 @@ export const importProductGlb = async (product) => {
   const { id, glbUrl } = product
   const loaderPath = `importingModel.glb.${id}`
   try {
-    if (!glbUrl) throw new Error("This product has no GLB file.")
+    if (!glbUrl) throw new Error(i18n.t("no_glb_file"))
     setLoader(loaderPath)
     await new Promise(resolve => setTimeout(resolve, IMPORT_UI_DELAY_MS))
     if (!sketchup.isInSketchup()) {
       downloadModelFile(glbUrl, `${id}.glb`)
-      showBanner("success", "GLB download started.")
+      showBanner("success", i18n.t("glb_download_started"))
       clearLoader(loaderPath)
       return
     }
@@ -567,12 +568,12 @@ export const importProductBundle = async (product) => {
   const { id, bundleUrl } = product
   const loaderPath = `importingModel.dae.${id}`
   try {
-    if (!bundleUrl) throw new Error("This product has no COLLADA bundle.")
+    if (!bundleUrl) throw new Error(i18n.t("no_collada_bundle"))
     setLoader(loaderPath)
     await new Promise(resolve => setTimeout(resolve, IMPORT_UI_DELAY_MS))
     if (!sketchup.isInSketchup()) {
       downloadModelFile(bundleUrl, `${id}.zip`)
-      showBanner("success", "COLLADA bundle download started.")
+      showBanner("success", i18n.t("collada_download_started"))
       clearLoader(loaderPath)
       return
     }
@@ -598,10 +599,10 @@ export const addOrImportProduct = async (product, { inSketchup, glbSupported } =
     return
   }
   if (glbUrl && !glbSupported) {
-    showBanner("error", "GLB import requires SketchUp 2025 or newer.")
+    showBanner("error", i18n.t("glb_requires_sketchup_2025"))
     return
   }
-  showBanner("error", "This product has no importable model.")
+  showBanner("error", i18n.t("this_product_has_no_importable_model"))
 }
 
 export const useImportListener = () => {
@@ -615,7 +616,7 @@ export const useImportListener = () => {
       if (_.isEmpty(payload) || !ok) {
         showBanner("error", message)
       } else {
-        showBanner("success", "Model imported successfully!")
+        showBanner("success", i18n.t("model_imported_successfully"))
         sketchup.getDocumentUsage()
       }
     }
@@ -661,13 +662,13 @@ export const formatDimensions = (dimensions) => {
   const hasDepth = depth != null
   if (!hasWidth && !hasHeight && !hasDepth) return null
   if (hasWidth && hasHeight && hasDepth) {
-    return `${width} × ${height} × ${depth} cm`
+    return i18n.t("dimensions_full", { width, height, depth })
   }
   const parts = []
-  if (hasWidth) parts.push(`W ${width}`)
-  if (hasHeight) parts.push(`H ${height}`)
-  if (hasDepth) parts.push(`D ${depth}`)
-  return `${parts.join(" · ")} cm`
+  if (hasWidth) parts.push(i18n.t("width_abbr", { value: width }))
+  if (hasHeight) parts.push(i18n.t("height_abbr", { value: height }))
+  if (hasDepth) parts.push(i18n.t("depth_abbr", { value: depth }))
+  return i18n.t("dimensions_parts", { parts: parts.join(" · ") })
 }
 
 export const getVisibleTags = (tags, max = MAX_VISIBLE_TAGS) => {

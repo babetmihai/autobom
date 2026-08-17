@@ -1,5 +1,6 @@
 import { ActionIcon, Button, Group } from "@mantine/core"
 import { IconExternalLink, IconPencil } from "@tabler/icons-react"
+import { useTranslation } from "react-i18next"
 import {
   addOrImportProduct,
   importProductBundle,
@@ -17,6 +18,7 @@ export default function ProductActions({
   className,
   inline = false
 }) {
+  const { t } = useTranslation()
   const productId = view?.id
   const importingGlb = useLoader(productId ? `importingModel.glb.${productId}` : "")
   const importingDae = useLoader(productId ? `importingModel.dae.${productId}` : "")
@@ -32,10 +34,10 @@ export default function ProductActions({
   const importing = importingGlb || importingDae
 
   const primaryTitle = (() => {
-    if (useGlbImport) return "Insert GLB model"
-    if (useBundleImport) return "Insert Collada model"
-    if (glbBlocked) return "GLB import requires SketchUp 2025 or newer."
-    return "No importable model"
+    if (useGlbImport) return t("insert_glb_model")
+    if (useBundleImport) return t("insert_collada_model")
+    if (glbBlocked) return t("glb_requires_sketchup_2025")
+    return t("no_importable_model")
   })()
 
   const stop = (event) => event.stopPropagation()
@@ -67,31 +69,31 @@ export default function ProductActions({
         <Button
           size="compact-xs"
           variant="default"
-          title="Download GLB model"
+          title={t("download_glb_model")}
           loading={importingGlb}
           disabled={importing}
           onClick={() => importProductGlb(view)}
         >
-          GLB
+          {t("glb")}
         </Button>
       }
       {!inSketchup && bundleUrl &&
         <Button
           size="compact-xs"
           variant="default"
-          title="Download COLLADA bundle (zip)"
+          title={t("download_collada_bundle")}
           loading={importingDae}
           disabled={importing}
           onClick={() => importProductBundle(view)}
         >
-          DAE
+          {t("dae")}
         </Button>
       }
       <ActionIcon
         variant="subtle"
         color="gray"
         size="sm"
-        title="Edit product"
+        title={t("edit_product")}
         onClick={(event) => {
           stop(event)
           showProductModal({ productId })
@@ -108,7 +110,7 @@ export default function ProductActions({
           variant="subtle"
           color="gray"
           size="sm"
-          title="View on store"
+          title={t("view_on_store")}
           onClick={stop}
         >
           <IconExternalLink size={14} stroke={1.75} />

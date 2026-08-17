@@ -3,6 +3,7 @@ import _ from "lodash"
 import { useFormik } from "formik"
 import { useSelector } from "react-redux"
 import { useHistory, useLocation } from "react-router-dom"
+import { useTranslation } from "react-i18next"
 import {
   Button,
   Group,
@@ -30,6 +31,7 @@ function ProductModal({
   onSubmit = _.noop,
   onClose = hideModal
 }) {
+  const { t } = useTranslation()
   const history = useHistory()
   const location = useLocation()
   const product = useSelector(() => selectProduct(productId))
@@ -41,12 +43,12 @@ function ProductModal({
     initialValues: productToFormValues(product),
     validate: (values) => {
       const errors = {}
-      if (!(values.name || "").trim()) errors.name = "Name is required"
+      if (!(values.name || "").trim()) errors.name = t("name_is_required")
       if (values.imageUrl && !/^https?:\/\//i.test(values.imageUrl.trim())) {
-        errors.imageUrl = "Enter a valid image URL"
+        errors.imageUrl = t("enter_valid_image_url")
       }
       if (values.productUrl && !/^https?:\/\//i.test(values.productUrl.trim())) {
-        errors.productUrl = "Enter a valid product URL"
+        errors.productUrl = t("enter_valid_product_url")
       }
       return errors
     },
@@ -62,7 +64,7 @@ function ProductModal({
         await onSubmit(item)
         hideModal()
       } catch (error) {
-        showBanner("error", error.message || "Could not save product")
+        showBanner("error", error.message || t("could_not_save_product"))
         helpers.setSubmitting(false)
       }
     }
@@ -70,23 +72,23 @@ function ProductModal({
 
   const { values, errors, touched, isSubmitting } = formik
   const busy = isSubmitting || isDeleting
-  const name = isEdit ? "Edit product" : "New product"
+  const name = (isEdit && t("edit_product")) || t("new_product")
 
   const onDelete = async () => {
-    if (!window.confirm("Delete this product?")) return
+    if (!window.confirm(t("delete_this_product"))) return
     try {
       setIsDeleting(true)
       await deleteProduct(productId)
       hideModal()
       if (location.pathname === `/product/${productId}`) history.push("/")
     } catch (error) {
-      showBanner("error", error.message || "Could not delete product")
+      showBanner("error", error.message || t("could_not_delete_product"))
       setIsDeleting(false)
     }
   }
 
   const categoryData = [
-    { value: "", label: "No category" },
+    { value: "", label: t("no_category") },
     ...Object.entries(CATEGORIES).map(([id, label]) => ({ value: id, label }))
   ]
 
@@ -106,11 +108,11 @@ function ProductModal({
               loading={isDeleting}
               onClick={onDelete}
             >
-              Delete
+              {t("delete")}
             </Button>
           }
           <Button variant="default" disabled={busy} onClick={onClose}>
-            Cancel
+            {t("cancel")}
           </Button>
           <Button
             color="brand"
@@ -118,7 +120,7 @@ function ProductModal({
             loading={isSubmitting}
             onClick={formik.handleSubmit}
           >
-            Save
+            {t("save")}
           </Button>
         </Group>
       }
@@ -126,7 +128,7 @@ function ProductModal({
       <form onSubmit={formik.handleSubmit}>
         <Stack gap="sm">
           <TextInput
-            label="Name"
+            label={t("name")}
             name="name"
             autoFocus
             disabled={busy}
@@ -136,16 +138,16 @@ function ProductModal({
             error={touched.name && errors.name}
           />
           <TextInput
-            label="Title"
+            label={t("title")}
             name="title"
             disabled={busy}
             value={values.title}
             onChange={formik.handleChange}
             onBlur={formik.handleBlur}
-            placeholder="Optional display title"
+            placeholder={t("optional_display_title")}
           />
           <Textarea
-            label="Description"
+            label={t("description")}
             name="description"
             rows={3}
             disabled={busy}
@@ -157,7 +159,7 @@ function ProductModal({
           />
           <SimpleGrid cols={2} spacing="sm">
             <TextInput
-              label="SKU"
+              label={t("sku")}
               name="sku"
               disabled={busy}
               value={values.sku}
@@ -165,7 +167,7 @@ function ProductModal({
               onBlur={formik.handleBlur}
             />
             <TextInput
-              label="Price"
+              label={t("price")}
               name="price"
               inputMode="decimal"
               disabled={busy}
@@ -175,7 +177,7 @@ function ProductModal({
             />
           </SimpleGrid>
           <TextInput
-            label="Store name"
+            label={t("store_name")}
             name="storeName"
             disabled={busy}
             value={values.storeName}
@@ -183,7 +185,7 @@ function ProductModal({
             onBlur={formik.handleBlur}
           />
           <Select
-            label="Category"
+            label={t("category")}
             name="categoryId"
             disabled={busy}
             data={categoryData}
@@ -193,7 +195,7 @@ function ProductModal({
             allowDeselect={false}
           />
           <TextInput
-            label="Image URL"
+            label={t("image_url")}
             name="imageUrl"
             type="url"
             disabled={busy}
@@ -204,7 +206,7 @@ function ProductModal({
             error={touched.imageUrl && errors.imageUrl}
           />
           <TextInput
-            label="Product URL"
+            label={t("product_url")}
             name="productUrl"
             type="url"
             disabled={busy}

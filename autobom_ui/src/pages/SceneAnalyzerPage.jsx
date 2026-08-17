@@ -28,9 +28,11 @@ import { useImportListener } from "../lib/products.js"
 import { useTagListener } from "../lib/tags.js"
 import { useLoader } from "../lib/loaders.js"
 import { glbNativeImport, isInSketchup, useSketchupEnvListener } from "../lib/sketchup.js"
+import { useTranslation } from "react-i18next"
 
 
 export default function SceneAnalyzerPage() {
+  const { t } = useTranslation()
   const { sceneId: routeSceneId } = useParams()
 
   React.useEffect(() => {
@@ -91,7 +93,7 @@ export default function SceneAnalyzerPage() {
           className="inline-flex items-center gap-1"
         >
           <IconChevronLeft size={16} stroke={1.75} />
-          Scenes
+          {t("scenes")}
         </Anchor>
       }
 
@@ -118,7 +120,7 @@ export default function SceneAnalyzerPage() {
               leftSection={!retrying && <IconRefresh size={16} stroke={1.75} />}
               onClick={() => void retryScene(scene)}
             >
-              Retry
+              {t("retry")}
             </Button>
           }
         </Group>
@@ -140,7 +142,7 @@ export default function SceneAnalyzerPage() {
             mb="sm"
             className="text-gray-700"
           >
-            Detected furniture ({cropsWithMatches.length})
+            {t("detected_furniture", { count: cropsWithMatches.length })}
           </Title>
           <div className="flex flex-col gap-4">
             {cropsWithMatches.map(({ crop, matches }) => (
@@ -167,7 +169,7 @@ export default function SceneAnalyzerPage() {
 
       {scene && !hasCrops && processing &&
         <Text size="sm" c="dimmed">
-          Scanning the scene for furniture...
+          {t("scanning_scene")}
         </Text>
       }
 
@@ -178,9 +180,9 @@ export default function SceneAnalyzerPage() {
           radius="md"
           className="border-dashed text-center"
         >
-          <Text fw={500} size="sm">No furniture detected</Text>
+          <Text fw={500} size="sm">{t("no_furniture_detected")}</Text>
           <Text size="xs" c="dimmed" mt={4}>
-            Try a clearer room photo with visible furniture.
+            {t("try_clearer_photo")}
           </Text>
         </Paper>
       }

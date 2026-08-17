@@ -10,11 +10,13 @@ import {
   TextInput,
   Title
 } from "@mantine/core"
+import { useTranslation } from "react-i18next"
 import { signInWithEmail, signUpWithEmail } from "../lib/auth.js"
 import { useLoader } from "../lib/loaders.js"
 
 
 export default function LoginPage() {
+  const { t } = useTranslation()
   const [email, setEmail] = React.useState("")
   const [password, setPassword] = React.useState("")
   const [mode, setMode] = React.useState("signIn")
@@ -46,12 +48,12 @@ export default function LoginPage() {
           Autobom
         </Title>
         <Text size="sm" c="dimmed" mt={4}>
-          {isSignIn ? "Sign in to your catalogue" : "Create an account"}
+          {(isSignIn && t("sign_in_to_your_catalogue")) || t("create_an_account")}
         </Text>
         <form className="mt-4" onSubmit={onSubmit}>
           <Stack gap="sm">
             <TextInput
-              label="Email"
+              label={t("email")}
               type="email"
               autoComplete="email"
               value={email}
@@ -60,7 +62,7 @@ export default function LoginPage() {
               disabled={busy}
             />
             <PasswordInput
-              label="Password"
+              label={t("password")}
               autoComplete={isSignIn ? "current-password" : "new-password"}
               value={password}
               onChange={(event) => setPassword(event.currentTarget.value)}
@@ -74,7 +76,7 @@ export default function LoginPage() {
               loading={busy}
               mt={4}
             >
-              {(busy && "Please wait…") || (isSignIn && "Sign in") || "Create account"}
+              {(busy && t("please_wait")) || (isSignIn && t("sign_in")) || t("create_account")}
             </Button>
           </Stack>
         </form>
@@ -86,7 +88,7 @@ export default function LoginPage() {
           disabled={busy}
           onClick={() => setMode(isSignIn ? "signUp" : "signIn")}
         >
-          {isSignIn ? "Need an account? Sign up" : "Already have an account? Sign in"}
+          {(isSignIn && t("need_an_account_sign_up")) || t("already_have_an_account_sign_in")}
         </Anchor>
       </Paper>
     </Center>
