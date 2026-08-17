@@ -109,7 +109,7 @@ function ProductModal({
             loading={isSubmitting}
             onClick={formik.handleSubmit}
           >
-            {t("save")}
+            {(isEdit && t("save")) || t("submit")}
           </Button>
         </Group>
       }

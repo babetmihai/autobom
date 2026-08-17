@@ -137,7 +137,7 @@ export default function ProductPage() {
                 <img
                   src={view.imageUrl}
                   alt={view.name || t("model")}
-                  className="h-full w-full object-cover"
+                  className="h-full w-full object-contain"
                 />
               }
               {!view.imageUrl &&

@@ -81,7 +81,7 @@ function ModelCard({
               src={view.imageUrl}
               alt={view.name || t("model")}
               loading="lazy"
-              className="max-h-full max-w-full object-contain object-center transition-transform duration-300 group-hover:scale-105"
+              className="h-full w-full object-contain object-center"
             />
           }
           {!view.imageUrl &&
