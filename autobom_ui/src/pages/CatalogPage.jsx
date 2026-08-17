@@ -1,6 +1,7 @@
 import React from "react"
 import { useSelector } from "react-redux"
 import {
+  ActionIcon,
   Button,
   Center,
   CloseButton,
@@ -40,7 +41,7 @@ export default function CatalogPage() {
   const { t } = useTranslation()
   const {
     searchQuery = "",
-    hasGlb = true,
+    hasGlb = false,
     hasBundle = false
   } = useSelector(() => appActions.get())
 
@@ -84,21 +85,33 @@ export default function CatalogPage() {
 
   return (
     <AppShell header={<AppHeader />}>
-      <TextInput
-        placeholder={t("search_models")}
-        value={searchQuery}
-        onChange={(event) => appActions.set("searchQuery", event.currentTarget.value)}
-        leftSection={<IconSearch size={18} stroke={1.75} />}
-        rightSection={searchQuery &&
-          <CloseButton
-            aria-label={t("clear_search")}
-            onClick={() => appActions.set("searchQuery", "")}
-          />
-        }
-        rightSectionPointerEvents="all"
-        size="md"
-        mb="md"
-      />
+      <Group gap="xs" mb="md" wrap="nowrap">
+        <TextInput
+          className="grow"
+          placeholder={t("search_models")}
+          value={searchQuery}
+          onChange={(event) => appActions.set("searchQuery", event.currentTarget.value)}
+          leftSection={<IconSearch size={18} stroke={1.75} />}
+          rightSection={searchQuery &&
+            <CloseButton
+              aria-label={t("clear_search")}
+              onClick={() => appActions.set("searchQuery", "")}
+            />
+          }
+          rightSectionPointerEvents="all"
+          size="md"
+        />
+        <ActionIcon
+          variant="default"
+          size="input-md"
+          aria-label={t("refresh_models")}
+          onClick={() => fetchProducts({ reset: true, ...productFilters })}
+          disabled={loading}
+        >
+          {loading && <Loader size={20} />}
+          {!loading && <IconRefresh size={22} stroke={1.75} />}
+        </ActionIcon>
+      </Group>
 
       <Group gap="xs" mb="md" justify="space-between">
         <Group gap="xs">
@@ -130,15 +143,6 @@ export default function CatalogPage() {
             onClick={() => appActions.set("hasGlb", !hasGlb)}
           >
             {t("glb")}
-          </Button>
-          <Button
-            variant="default"
-            leftSection={loading ? <Loader size={14} /> : <IconRefresh size={16} stroke={1.75} />}
-            onClick={() => fetchProducts({ reset: true, ...productFilters })}
-            disabled={loading}
-            aria-label={t("refresh_models")}
-          >
-            {t("refresh")}
           </Button>
         </Group>
       </Group>
