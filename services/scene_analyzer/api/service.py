@@ -52,7 +52,10 @@ def analyze():
             image_bytes = response.content
 
     if not image_bytes:
-        return jsonify({"error": "Provide image file or JSON { url, labels? }"}), 400
+        return jsonify({"error": "Provide image file or JSON { url, labels }"}), 400
+
+    if not labels:
+        return jsonify({"error": "Provide labels array in JSON body or form field"}), 400
 
     app.logger.info("Analyzing scene (%s bytes)", len(image_bytes))
 

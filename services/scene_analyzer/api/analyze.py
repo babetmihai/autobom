@@ -2,44 +2,11 @@ import base64
 import os
 from io import BytesIO
 
-import requests
 import torch
 from PIL import Image
 
 DETECT_THRESHOLD = float(os.getenv("SCENE_DETECT_THRESHOLD", "0.12"))
 MAX_CROPS = int(os.getenv("SCENE_MAX_CROPS", "12"))
-ANALYZE_TIMEOUT_MS = int(os.getenv("ANALYZE_TIMEOUT_MS", "120000"))
-
-FURNITURE_LABELS = [
-    "chair",
-    "armchair",
-    "sofa",
-    "sectional sofa",
-    "stool",
-    "bench",
-    "ottoman",
-    "table",
-    "desk",
-    "coffee table",
-    "dining table",
-    "side table",
-    "console table",
-    "nightstand",
-    "cabinet",
-    "dresser",
-    "wardrobe",
-    "shelf",
-    "bookcase",
-    "sideboard",
-    "bed",
-    "headboard",
-    "mirror",
-    "floor lamp",
-    "table lamp",
-    "pendant lamp",
-    "chandelier",
-    "rug"
-]
 
 _owlvit_processor = None
 _owlvit_model = None
@@ -116,14 +83,13 @@ def _crop_to_base64(pil_image, bbox):
     return base64.b64encode(buffer.getvalue()).decode("ascii")
 
 
-def analyze_image_bytes(image_bytes, labels=None):
+def analyze_image_bytes(image_bytes, labels):
     pil_image = _load_image_bytes(image_bytes)
-    label_list = labels or FURNITURE_LABELS
     _load_owlvit()
     device = _device()
     width, height = pil_image.size
 
-    inputs = _owlvit_processor(text=[label_list], images=pil_image, return_tensors="pt")
+    inputs = _owlvit_processor(text=[labels], images=pil_image, return_tensors="pt")
     inputs = {key: value.to(device) for key, value in inputs.items()}
 
     with torch.no_grad():
@@ -134,7 +100,7 @@ def analyze_image_bytes(image_bytes, labels=None):
         outputs=outputs,
         target_sizes=target_sizes,
         threshold=DETECT_THRESHOLD,
-        text_labels=[label_list]
+        text_labels=[labels]
     )[0]
 
     candidates = []

@@ -1,6 +1,7 @@
 import axios from "axios"
 import cleanDeep from "clean-deep"
 import { SCENE_ANALYZER_URL, TRUE } from "../lib"
+import { PRODUCT_TAGS } from "../lib/products"
 import { STEP_STATUS } from "../lib/status"
 import { claimNext, completeStep, failStep, findOwnProcessing } from "../lib/claim"
 import { uploadFile } from "../lib/storage"
@@ -40,7 +41,7 @@ const run = async () => {
     }
 
     console.log("Detecting crops in scene:", url)
-    const { data: detection } = await sceneClient.post("/analyze", { url }, {
+    const { data: detection } = await sceneClient.post("/analyze", { url, labels: PRODUCT_TAGS }, {
       timeout: ANALYZE_TIMEOUT_MS
     })
 

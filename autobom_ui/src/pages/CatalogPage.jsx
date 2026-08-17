@@ -3,6 +3,7 @@ import { useSelector } from "react-redux"
 import {
   Button,
   Center,
+  CloseButton,
   Group,
   Loader,
   Text,
@@ -88,6 +89,13 @@ export default function CatalogPage() {
         value={searchQuery}
         onChange={(event) => appActions.set("searchQuery", event.currentTarget.value)}
         leftSection={<IconSearch size={18} stroke={1.75} />}
+        rightSection={searchQuery &&
+          <CloseButton
+            aria-label={t("clear_search")}
+            onClick={() => appActions.set("searchQuery", "")}
+          />
+        }
+        rightSectionPointerEvents="all"
         size="md"
         mb="md"
       />
