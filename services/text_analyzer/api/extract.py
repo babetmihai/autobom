@@ -2,7 +2,7 @@ import json
 import logging
 import os
 import re
-from urllib.parse import urljoin, urlparse
+from urllib.parse import urljoin
 
 import requests
 from bs4 import BeautifulSoup
@@ -35,11 +35,6 @@ def _absolute_url(base, value):
     if not value:
         return None
     return urljoin(base, value.strip())
-
-
-def _store_name(url):
-    host = urlparse(url).hostname or ""
-    return host.removeprefix("www.")
 
 
 def _clean_text(value):
@@ -126,20 +121,13 @@ def _from_json_ld(products, base_url):
         return {}
     product = products[0]
     price, currency = _price_from_offers(product.get("offers"))
-    brand = product.get("brand")
-    store = None
-    if isinstance(brand, dict):
-        store = _clean_text(brand.get("name"))
-    elif isinstance(brand, str):
-        store = _clean_text(brand)
     return {
         "name": _clean_text(product.get("name")),
         "description": _description_value(product.get("description")),
         "sku": _clean_text(product.get("sku") or product.get("mpn")),
         "price": price,
         "currency": currency,
-        "imageUrl": _image_from_value(product.get("image"), base_url),
-        "storeName": store
+        "imageUrl": _image_from_value(product.get("image"), base_url)
     }
 
 
@@ -160,8 +148,7 @@ def _from_open_graph(soup, base_url):
         ),
         "price": _meta_content(soup, "product:price:amount", "og:price:amount"),
         "currency": _meta_content(soup, "product:price:currency", "og:price:currency"),
-        "imageUrl": _absolute_url(base_url, image) if image else None,
-        "storeName": _meta_content(soup, "og:site_name")
+        "imageUrl": _absolute_url(base_url, image) if image else None
     }
 
 
@@ -244,7 +231,7 @@ Page text:
 {page_text}
 
 Return JSON only with these keys:
-{{"name": string|null, "description": string|null, "price": string|null, "currency": string|null, "sku": string|null, "imageUrl": string|null, "storeName": string|null}}
+{{"name": string|null, "description": string|null, "price": string|null, "currency": string|null, "sku": string|null, "imageUrl": string|null}}
 
 Rules:
 - name is the product title
@@ -281,8 +268,7 @@ def _ollama_extract(url, page_text, candidates, seed):
         "price": _clean_text(parsed.get("price")),
         "currency": _clean_text(parsed.get("currency")),
         "sku": _clean_text(parsed.get("sku")),
-        "imageUrl": image_url,
-        "storeName": _clean_text(parsed.get("storeName"))
+        "imageUrl": image_url
     }
 
 
@@ -304,7 +290,7 @@ def extract_product(url):
     json_ld = _from_json_ld(_json_ld_products(soup), final_url)
     open_graph = _from_open_graph(soup, final_url)
     dom = _from_dom(soup)
-    seed = _merge_fields(json_ld, open_graph, dom, {"storeName": _store_name(final_url)})
+    seed = _merge_fields(json_ld, open_graph, dom)
     candidates = _candidate_images(soup, final_url)
     if seed.get("imageUrl") and seed["imageUrl"] not in candidates:
         candidates = [seed["imageUrl"], *candidates][:MAX_IMAGE_CANDIDATES]
@@ -323,8 +309,7 @@ def extract_product(url):
                 logger.warning("Optional description extract failed: %s", exc)
 
     fields = _merge_fields(seed, llm_fields, {
-        "productUrl": final_url,
-        "storeName": _store_name(final_url)
+        "productUrl": final_url
     })
 
     if not fields.get("imageUrl") and candidates:
@@ -342,6 +327,5 @@ def extract_product(url):
         "currency": fields.get("currency"),
         "sku": fields.get("sku"),
         "imageUrl": fields.get("imageUrl"),
-        "storeName": fields.get("storeName"),
         "productUrl": fields.get("productUrl") or final_url
     }

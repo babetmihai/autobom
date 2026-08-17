@@ -6,13 +6,14 @@ import { useTranslation } from "react-i18next"
 import {
   Button,
   Group,
+  Input,
   SimpleGrid,
   Stack,
   Text,
   Textarea,
   TextInput
 } from "@mantine/core"
-import { IconUpload } from "@tabler/icons-react"
+import { IconPhoto, IconUpload } from "@tabler/icons-react"
 import { hideModal, showModal } from "../lib/modals.js"
 import { showBanner } from "../lib/banner/index.js"
 import {
@@ -34,7 +35,6 @@ function ProductModal({
   const isEdit = Boolean(productId)
   const [imageFile, setImageFile] = React.useState(null)
   const [imagePreview, setImagePreview] = React.useState(null)
-  const [imageError, setImageError] = React.useState("")
   const imageInputRef = React.useRef(null)
   const { imageUrl: existingImageUrl } = product || {}
 
@@ -50,21 +50,18 @@ function ProductModal({
 
   const formik = useFormik({
     enableReinitialize: true,
-    initialValues: productToFormValues(product),
+    validateOnBlur: false,
+    initialValues: { ...productToFormValues(product), image: existingImageUrl || "" },
     validate: (values) => {
       const errors = {}
       if (!(values.name || "").trim()) errors.name = t("name_is_required")
       if (values.productUrl && !/^https?:\/\//i.test(values.productUrl.trim())) {
         errors.productUrl = t("enter_valid_product_url")
       }
+      if (!(values.image || "").trim()) errors.image = t("image_is_required")
       return errors
     },
     onSubmit: async (values, helpers) => {
-      if (!imageFile && !existingImageUrl) {
-        setImageError(t("image_is_required"))
-        helpers.setSubmitting(false)
-        return
-      }
       try {
         helpers.setSubmitting(true)
         let item
@@ -87,6 +84,9 @@ function ProductModal({
   const name = (isEdit && t("edit_product")) || t("new_product")
   const previewSrc = imagePreview || existingImageUrl
   const canReplace = Boolean(previewSrc)
+  const imageError = touched.image && errors.image
+  const imageButtonStyle = {}
+  if (imageError) imageButtonStyle.borderColor = "var(--mantine-color-error)"
 
   const openImagePicker = () => {
     if (busy) return
@@ -156,26 +156,23 @@ function ProductModal({
               onBlur={formik.handleBlur}
             />
           </SimpleGrid>
-          <TextInput
-            label={t("store_name")}
-            name="storeName"
-            disabled={busy}
-            value={values.storeName}
-            onChange={formik.handleChange}
-            onBlur={formik.handleBlur}
-          />
-          <div>
-            <Text size="sm" fw={500} className="mb-1.5">{t("image")}</Text>
+          <Input.Wrapper label={t("image")} error={imageError}>
             <Group align="flex-end" gap="sm" wrap="nowrap">
               <button
                 type="button"
-                className="h-[7.5rem] w-[7.5rem] shrink-0 cursor-pointer appearance-none overflow-hidden rounded-lg border border-gray-200 bg-gray-100 p-0"
+                className="box-border h-[7.5rem] w-[7.5rem] shrink-0 cursor-pointer appearance-none overflow-hidden rounded-lg border border-gray-200 bg-gray-100 p-0"
+                style={imageButtonStyle}
                 disabled={busy}
                 onClick={openImagePicker}
                 aria-label={(canReplace && t("replace_image")) || t("upload_image")}
               >
                 {previewSrc &&
                   <img src={previewSrc} alt="" className="h-full w-full object-cover" />
+                }
+                {!previewSrc &&
+                  <span className="flex h-full w-full items-center justify-center text-gray-400">
+                    <IconPhoto size={48} stroke={1.5} />
+                  </span>
                 }
               </button>
               <Stack gap={4}>
@@ -197,9 +194,6 @@ function ProductModal({
                 }
               </Stack>
             </Group>
-            {imageError &&
-              <Text size="xs" c="red" className="mt-1">{imageError}</Text>
-            }
             <input
               ref={imageInputRef}
               type="file"
@@ -211,10 +205,10 @@ function ProductModal({
                 event.target.value = ""
                 if (!file || !_.includes(["image/jpeg", "image/png", "image/webp"], file.type)) return
                 setImageFile(file)
-                setImageError("")
+                formik.setFieldValue("image", file.name)
               }}
             />
-          </div>
+          </Input.Wrapper>
           <TextInput
             label={t("product_url")}
             name="productUrl"

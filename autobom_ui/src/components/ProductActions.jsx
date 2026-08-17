@@ -1,5 +1,4 @@
-import { ActionIcon, Button, Group } from "@mantine/core"
-import { IconExternalLink } from "@tabler/icons-react"
+import { Button, Group } from "@mantine/core"
 import { useTranslation } from "react-i18next"
 import {
   addOrImportProduct,
@@ -87,21 +86,6 @@ export default function ProductActions({
         >
           {t("dae")}
         </Button>
-      }
-      {view.productUrl &&
-        <ActionIcon
-          component="a"
-          href={view.productUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          variant="subtle"
-          color="gray"
-          size="sm"
-          title={t("view_on_store")}
-          onClick={stop}
-        >
-          <IconExternalLink size={14} stroke={1.75} />
-        </ActionIcon>
       }
     </Group>
   )

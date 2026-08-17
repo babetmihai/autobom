@@ -20,7 +20,6 @@ type TExtractedProduct = {
   currency?: string
   sku?: string
   imageUrl?: string
-  storeName?: string
   productUrl?: string
 }
 
@@ -67,7 +66,6 @@ export const scrapeProduct = async (product: {
     price,
     sku,
     imageUrl: remoteImageUrl,
-    storeName,
     productUrl: resolvedUrl
   } = data || {}
 
@@ -83,7 +81,6 @@ export const scrapeProduct = async (product: {
     price,
     productUrl: resolvedUrl || sourceUrl,
     sourceUrl,
-    storeName,
     imageUrl,
     "status.scrape": STEP_STATUS.COMPLETED
   }))

@@ -87,7 +87,6 @@ const mapProduct = (data) => {
     productUrl,
     source,
     sourceUrl,
-    storeName: data.storeName || null,
     status: data.status || null,
     download_url: glbUrl || bundleUrl,
     glbUrl,
@@ -357,8 +356,7 @@ export const productToFormValues = (product) => {
     description = "",
     sku = "",
     price = "",
-    productUrl = "",
-    storeName = ""
+    productUrl = ""
   } = product || {}
 
   return {
@@ -366,8 +364,7 @@ export const productToFormValues = (product) => {
     description: description || "",
     sku: sku || "",
     price: price == null ? "" : String(price),
-    productUrl: productUrl || "",
-    storeName: storeName || ""
+    productUrl: productUrl || ""
   }
 }
 
@@ -378,8 +375,7 @@ const formValuesToPayload = (values) => {
     description: (values.description || "").trim() || null,
     sku: (values.sku || "").trim() || null,
     price: values.price === "" || values.price == null ? null : String(values.price),
-    productUrl: (values.productUrl || "").trim() || null,
-    storeName: (values.storeName || "").trim() || null
+    productUrl: (values.productUrl || "").trim() || null
   }, _.isNil)
 }
 
@@ -527,8 +523,7 @@ export const importProductFromUrl = async (url) => {
     }
 
     const now = Date.now()
-    const storeName = hostFromUrl(sourceUrl)
-    const name = i18n.t("importing_from", { store: storeName })
+    const name = i18n.t("importing_from", { store: hostFromUrl(sourceUrl) })
     const raw = {
       _active: TRUE,
       id,
@@ -536,7 +531,6 @@ export const importProductFromUrl = async (url) => {
       source: PRODUCT_SOURCE.URL,
       sourceUrl,
       productUrl: sourceUrl,
-      storeName,
       createdBy,
       status: { ...URL_IMPORT_PRODUCT_STATUS },
       createdAt: now,

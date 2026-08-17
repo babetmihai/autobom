@@ -1,5 +1,5 @@
 import { Button, Group } from "@mantine/core"
-import { IconDownload, IconExternalLink, IconPencil, IconRefresh, IconTrash } from "@tabler/icons-react"
+import { IconDownload, IconPencil, IconRefresh, IconTrash } from "@tabler/icons-react"
 import { useTranslation } from "react-i18next"
 import {
   addOrImportProduct,
@@ -21,7 +21,7 @@ export default function ProductPageActions({
   onDelete
 }) {
   const { t } = useTranslation()
-  const { id: productId, glbUrl, bundleUrl, productUrl } = view || {}
+  const { id: productId, glbUrl, bundleUrl } = view || {}
   const importingGlb = useLoader(productId ? `importingModel.glb.${productId}` : "")
   const importingDae = useLoader(productId ? `importingModel.dae.${productId}` : "")
 
@@ -36,6 +36,7 @@ export default function ProductPageActions({
   const busy = importing || isDeleting
 
   const onReprocess = async () => {
+    if (!window.confirm(t("reprocess_this_product"))) return
     try {
       await reprocessProduct(view)
     } catch (error) {
@@ -72,7 +73,7 @@ export default function ProductPageActions({
       }
       {!inSketchup && glbUrl &&
         <Button
-          variant="default"
+          color="brand"
           title={t("download_glb_model")}
           leftSection={<IconDownload size={16} stroke={1.75} />}
           disabled={busy}
@@ -94,29 +95,6 @@ export default function ProductPageActions({
           {t("colada")}
         </Button>
       }
-      {productUrl &&
-        <Button
-          component="a"
-          href={productUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          variant="default"
-          title={t("view_on_store")}
-          leftSection={<IconExternalLink size={16} stroke={1.75} />}
-          disabled={busy}
-        >
-          {t("view_on_store")}
-        </Button>
-      }
-      <Button
-        variant="default"
-        title={t("reprocess")}
-        leftSection={<IconRefresh size={16} stroke={1.75} />}
-        disabled={busy}
-        onClick={() => void onReprocess()}
-      >
-        {t("reprocess")}
-      </Button>
       <Button
         variant="default"
         title={t("edit")}
@@ -127,7 +105,16 @@ export default function ProductPageActions({
         {t("edit")}
       </Button>
       <Button
-        variant="subtle"
+        variant="default"
+        title={t("reprocess")}
+        leftSection={<IconRefresh size={16} stroke={1.75} />}
+        disabled={busy}
+        onClick={() => void onReprocess()}
+      >
+        {t("reprocess")}
+      </Button>
+      <Button
+        variant="outline"
         color="red"
         title={t("delete")}
         leftSection={<IconTrash size={16} stroke={1.75} />}

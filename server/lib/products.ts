@@ -68,7 +68,6 @@ export type TProduct = {
   sku: string
   price: string
   productUrl: string
-  storeName: string
   source?: TProductSource | string
   sourceUrl?: string
   imageUrl: string
