@@ -40,7 +40,8 @@ export default function CatalogPage() {
   const { t } = useTranslation()
   const {
     searchQuery = "",
-    hasGlb = true
+    hasGlb = true,
+    hasBundle = false
   } = useSelector(() => appActions.get())
 
   const [sketchupEnv, setSketchupEnv] = React.useState(null)
@@ -54,10 +55,9 @@ export default function CatalogPage() {
 
   const productFilters = {
     search: searchQuery,
-    hasGlb: glbSupported && hasGlb,
-    hasBundle: !glbSupported && hasGlb
+    hasGlb,
+    hasBundle
   }
-  const modelFilterLabel = (glbSupported && t("glb")) || t("dae")
 
   React.useEffect(() => {
     const delay = searchQuery.trim() ? 300 : 0
@@ -65,7 +65,7 @@ export default function CatalogPage() {
       fetchProducts({ reset: true, ...productFilters })
     }, delay)
     return () => clearTimeout(timer)
-  }, [searchQuery, hasGlb, glbSupported])
+  }, [searchQuery, hasGlb, hasBundle])
 
   useImportListener()
   usePendingUrlImportListeners()
@@ -73,7 +73,7 @@ export default function CatalogPage() {
   useSketchupEnvListener(setSketchupEnv)
 
   const list = Object.values(products)
-  const hasFilters = Boolean(searchQuery.trim() || hasGlb)
+  const hasFilters = Boolean(searchQuery.trim() || hasGlb || hasBundle)
 
   const loading = useLoader("loadProducts")
   const loadingMore = useLoader("loadMoreProducts")
@@ -100,33 +100,47 @@ export default function CatalogPage() {
         mb="md"
       />
 
-      <Group gap="xs" mb="md">
-        <Button
-          variant="default"
-          leftSection={loading ? <Loader size={14} /> : <IconRefresh size={16} stroke={1.75} />}
-          onClick={() => fetchProducts({ reset: true, ...productFilters })}
-          disabled={loading}
-          aria-label={t("refresh_models")}
-        >
-          {t("refresh")}
-        </Button>
-        <Button
-          variant={hasGlb ? "light" : "default"}
-          color={hasGlb ? "brand" : "gray"}
-          onClick={() => appActions.set("hasGlb", !hasGlb)}
-        >
-          {modelFilterLabel}
-        </Button>
-        <Button
-          variant="default"
-          leftSection={<IconPlus size={16} stroke={1.75} />}
-          onClick={() => showProductModal({
-            onSubmit: () => appActions.set("hasGlb", false)
-          })}
-        >
-          {t("new")}
-        </Button>
-        <ProductUrlImport />
+      <Group gap="xs" mb="md" justify="space-between">
+        <Group gap="xs">
+          <Button
+            variant="default"
+            leftSection={<IconPlus size={16} stroke={1.75} />}
+            onClick={() => showProductModal({
+              onSubmit: () => {
+                appActions.set("hasGlb", false)
+                appActions.set("hasBundle", false)
+              }
+            })}
+          >
+            {t("new")}
+          </Button>
+          <ProductUrlImport />
+        </Group>
+        <Group gap="xs">
+          <Button
+            variant={hasBundle ? "light" : "default"}
+            color={hasBundle ? "brand" : "gray"}
+            onClick={() => appActions.set("hasBundle", !hasBundle)}
+          >
+            {t("dae")}
+          </Button>
+          <Button
+            variant={hasGlb ? "light" : "default"}
+            color={hasGlb ? "brand" : "gray"}
+            onClick={() => appActions.set("hasGlb", !hasGlb)}
+          >
+            {t("glb")}
+          </Button>
+          <Button
+            variant="default"
+            leftSection={loading ? <Loader size={14} /> : <IconRefresh size={16} stroke={1.75} />}
+            onClick={() => fetchProducts({ reset: true, ...productFilters })}
+            disabled={loading}
+            aria-label={t("refresh_models")}
+          >
+            {t("refresh")}
+          </Button>
+        </Group>
       </Group>
 
       {initialLoading &&

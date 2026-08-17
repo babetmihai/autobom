@@ -19,6 +19,7 @@ export default function ProductUrlImportModal({ onClose = hideModal }) {
     const id = await importProductFromUrl(url)
     if (!id) return
     appActions.set("hasGlb", false)
+    appActions.set("hasBundle", false)
     onClose()
   }
 
