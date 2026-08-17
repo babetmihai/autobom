@@ -1,7 +1,6 @@
 {
   "add_product": "Add product",
   "adding": "Adding...",
-  "all": "All",
   "already_have_an_account_sign_in": "Already have an account? Sign in",
   "analysis_complete": "Analysis complete",
   "analysis_failed": "Analysis failed",
@@ -12,7 +11,6 @@
   "cancel": "Cancel",
   "catalog": "Catalog",
   "catalog_item": "Catalog item",
-  "category": "Category",
   "collada_download_started": "COLLADA bundle download started.",
   "collapse_sidebar": "Collapse sidebar",
   "color": "Color: {{color}}",
@@ -100,7 +98,6 @@
   "new": "New",
   "new_product": "New product",
   "no_catalog_matches_found": "No catalog matches found",
-  "no_category": "No category",
   "no_collada_bundle": "This product has no COLLADA bundle.",
   "no_furniture_detected": "No furniture detected",
   "no_glb_file": "This product has no GLB file.",

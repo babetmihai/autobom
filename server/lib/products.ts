@@ -72,7 +72,6 @@ export type TProduct = {
   storeName: string
   source?: TProductSource | string
   sourceUrl?: string
-  categoryId: string
   imageUrl: string
   status: TProductStatus
   tags?: Record<string, string>

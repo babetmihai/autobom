@@ -119,11 +119,6 @@ export default function ProductPage() {
                   {sourceLabel}
                 </Badge>
               }
-              {view.category &&
-                <Badge className="absolute right-3 top-3 z-10 max-w-[calc(100%-1.5rem)]" variant="default">
-                  {view.category}
-                </Badge>
-              }
               {view.imageUrl &&
                 <img
                   src={view.imageUrl}
@@ -187,7 +182,7 @@ export default function ProductPage() {
                   target="_blank"
                   rel="noopener noreferrer"
                   size="xs"
-                  c="dimmed"
+                  c="brand"
                   className="mt-1 truncate"
                 >
                   {view.sourceUrl}

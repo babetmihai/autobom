@@ -3,10 +3,8 @@ import { useSelector } from "react-redux"
 import {
   Button,
   Center,
-  Chip,
   Group,
   Loader,
-  Stack,
   Text,
   TextInput
 } from "@mantine/core"
@@ -16,7 +14,6 @@ import { AppShell } from "../components/AppShell.jsx"
 import { actions } from "../lib/store/index.js"
 import { useLoader } from "../lib/loaders.js"
 import {
-  CATEGORIES,
   fetchProducts,
   loadMoreProducts,
   selectProducts,
@@ -42,7 +39,6 @@ export default function CatalogPage() {
   const { t } = useTranslation()
   const {
     searchQuery = "",
-    categoryId = "",
     hasGlb = true
   } = useSelector(() => appActions.get())
 
@@ -57,7 +53,6 @@ export default function CatalogPage() {
 
   const productFilters = {
     search: searchQuery,
-    categoryId,
     hasGlb: glbSupported && hasGlb,
     hasBundle: !glbSupported && hasGlb
   }
@@ -69,7 +64,7 @@ export default function CatalogPage() {
       fetchProducts({ reset: true, ...productFilters })
     }, delay)
     return () => clearTimeout(timer)
-  }, [searchQuery, categoryId, hasGlb, glbSupported])
+  }, [searchQuery, hasGlb, glbSupported])
 
   useImportListener()
   usePendingUrlImportListeners()
@@ -77,7 +72,7 @@ export default function CatalogPage() {
   useSketchupEnvListener(setSketchupEnv)
 
   const list = Object.values(products)
-  const hasFilters = Boolean(searchQuery.trim() || categoryId || hasGlb)
+  const hasFilters = Boolean(searchQuery.trim() || hasGlb)
 
   const loading = useLoader("loadProducts")
   const loadingMore = useLoader("loadMoreProducts")
@@ -86,42 +81,16 @@ export default function CatalogPage() {
   const initialLoading = loading && listEmpty
   const showList = !listEmpty
 
-  const setCategoryId = (id) => {
-    appActions.set("categoryId", categoryId === id ? "" : id)
-  }
-
   return (
     <AppShell header={<AppHeader />}>
-      <Stack gap="md" mb="md">
-        <TextInput
-          placeholder={t("search_models")}
-          value={searchQuery}
-          onChange={(event) => appActions.set("searchQuery", event.currentTarget.value)}
-          leftSection={<IconSearch size={18} stroke={1.75} />}
-          size="md"
-        />
-        <Group gap="xs">
-          <Chip
-            checked={!categoryId}
-            onChange={() => appActions.set("categoryId", "")}
-            variant="outline"
-            color="brand"
-          >
-            {t("all")}
-          </Chip>
-          {Object.entries(CATEGORIES).map(([id, name]) => (
-            <Chip
-              key={id}
-              checked={categoryId === id}
-              onChange={() => setCategoryId(id)}
-              variant="outline"
-              color="brand"
-            >
-              {name}
-            </Chip>
-          ))}
-        </Group>
-      </Stack>
+      <TextInput
+        placeholder={t("search_models")}
+        value={searchQuery}
+        onChange={(event) => appActions.set("searchQuery", event.currentTarget.value)}
+        leftSection={<IconSearch size={18} stroke={1.75} />}
+        size="md"
+        mb="md"
+      />
 
       <Group gap="xs" mb="md">
         <Button

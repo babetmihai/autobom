@@ -67,28 +67,6 @@
       "queryScope": "COLLECTION",
       "fields": [
         {
-          "fieldPath": "createdBy",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "_active",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "categoryId",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "__name__",
-          "order": "DESCENDING"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "products",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {
           "fieldPath": "_active",
           "order": "ASCENDING"
         },

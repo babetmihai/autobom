@@ -77,15 +77,6 @@ function ModelCard({
               {sourceLabel}
             </Badge>
           }
-          {view.category &&
-            <Badge
-              className="absolute right-1.5 top-1.5 z-10 max-w-[calc(100%-0.75rem)]"
-              variant="default"
-              size="sm"
-            >
-              {view.category}
-            </Badge>
-          }
           {view.imageUrl &&
             <img
               src={view.imageUrl}
@@ -171,9 +162,16 @@ function ModelCard({
             </p>
           }
           {fromUrl && view.sourceUrl &&
-            <p className="mb-1 truncate text-[0.6875rem] text-gray-400" title={view.sourceUrl}>
+            <a
+              href={view.sourceUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mb-1 truncate text-[0.6875rem] text-brand-500 hover:text-brand-600"
+              title={view.sourceUrl}
+              onClick={(event) => event.stopPropagation()}
+            >
               {view.sourceUrl}
-            </p>
+            </a>
           }
           {view.sku &&
             <p className="mb-1 text-xs tabular-nums text-gray-400">{view.sku}</p>

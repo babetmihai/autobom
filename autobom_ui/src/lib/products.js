@@ -41,19 +41,6 @@ const COLOR_HEX = {
 
 const productService = createServices("products")
 
-export const CATEGORIES = {
-  canapele: "canapele",
-  fotolii: "fotolii",
-  scaune: "scaune",
-  taburete: "taburete",
-  mese: "mese",
-  depozitare: "depozitare",
-  paturi: "paturi",
-  iluminat: "iluminat",
-  decor: "decor",
-  exterior: "exterior"
-}
-
 const cacheBustedModelUrl = (url) => {
   if (!url) return url
   const sep = url.includes("?") ? "&" : "?"
@@ -80,9 +67,7 @@ const parsePrice = (price) => {
 const mapProduct = (data) => {
   if (!data) return null
 
-  const { categoryId: dataCategoryId, imageUrl } = data || {}
-  const categoryId = dataCategoryId || null
-  const category = categoryId ? CATEGORIES[categoryId] || null : null
+  const { imageUrl } = data || {}
   const title = data.title || data.name
   const subtitle = data.name && title !== data.name ? data.name : null
   const glbUrl = data.hasGlb === TRUE ? data.modelGlbUrl || null : null
@@ -99,8 +84,6 @@ const mapProduct = (data) => {
     subtitle,
     description: data.description || null,
     sku: data.sku || null,
-    categoryId,
-    category,
     price: parsePrice(data.price),
     currency: "RON",
     imageUrl: imageUrl || null,
@@ -136,11 +119,10 @@ export const resolveProductView = (product) => {
   }
 }
 
-const buildListQuery = ({ search, categoryId, hasGlb, hasBundle, lastId, createdBy }) => {
+const buildListQuery = ({ search, hasGlb, hasBundle, lastId, createdBy }) => {
   const query = { pageSize: PAGE_SIZE, createdBy }
   const trimmedSearch = search?.trim?.()
   if (trimmedSearch) query.search = trimmedSearch
-  if (categoryId) query.categoryId = categoryId
   if (hasGlb) query.hasGlb = "TRUE"
   if (hasBundle) query.hasBundle = "TRUE"
   if (lastId) query.lastId = lastId
@@ -195,14 +177,11 @@ export const fetchProduct = async (id) => {
   }
 }
 
-export const selectCategories = () => CATEGORIES
-
 export const selectProductsMeta = () => actions.get("productsMeta", { lastId: null, hasMore: false })
 
 export const fetchProducts = async ({
   reset = true,
   search = "",
-  categoryId = "",
   hasGlb = false,
   hasBundle = false
 } = {}) => {
@@ -213,7 +192,6 @@ export const fetchProducts = async ({
     setLoader("loadProducts")
     const rawProducts = await productService.list(buildListQuery({
       search,
-      categoryId,
       hasGlb,
       hasBundle,
       createdBy
@@ -316,8 +294,7 @@ export const productToFormValues = (product) => {
     price = "",
     imageUrl = "",
     productUrl = "",
-    storeName = "",
-    categoryId = ""
+    storeName = ""
   } = product || {}
 
   return {
@@ -328,8 +305,7 @@ export const productToFormValues = (product) => {
     price: price == null ? "" : String(price),
     imageUrl: imageUrl || "",
     productUrl: productUrl || "",
-    storeName: storeName || "",
-    categoryId: categoryId || ""
+    storeName: storeName || ""
   }
 }
 
@@ -344,8 +320,7 @@ const formValuesToPayload = (values) => {
     price: values.price === "" || values.price == null ? null : String(values.price),
     imageUrl: (values.imageUrl || "").trim() || null,
     productUrl: (values.productUrl || "").trim() || null,
-    storeName: (values.storeName || "").trim() || null,
-    categoryId: values.categoryId || null
+    storeName: (values.storeName || "").trim() || null
   }, _.isNil)
 }
 
@@ -516,7 +491,6 @@ export const usePendingUrlImportListeners = () => {
 
 export const loadMoreProducts = async ({
   search = "",
-  categoryId = "",
   hasGlb = false,
   hasBundle = false
 } = {}) => {
@@ -528,7 +502,6 @@ export const loadMoreProducts = async ({
     setLoader("loadMoreProducts")
     const rawProducts = await productService.list(buildListQuery({
       search,
-      categoryId,
       hasGlb,
       hasBundle,
       lastId,

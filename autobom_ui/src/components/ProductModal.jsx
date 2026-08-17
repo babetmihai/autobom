@@ -7,7 +7,6 @@ import { useTranslation } from "react-i18next"
 import {
   Button,
   Group,
-  Select,
   SimpleGrid,
   Stack,
   Textarea,
@@ -16,7 +15,6 @@ import {
 import { hideModal, showModal } from "../lib/modals.js"
 import { showBanner } from "../lib/banner/index.js"
 import {
-  CATEGORIES,
   createProduct,
   deleteProduct,
   productToFormValues,
@@ -86,11 +84,6 @@ function ProductModal({
       setIsDeleting(false)
     }
   }
-
-  const categoryData = [
-    { value: "", label: t("no_category") },
-    ...Object.entries(CATEGORIES).map(([id, label]) => ({ value: id, label }))
-  ]
 
   return (
     <AppModal
@@ -183,16 +176,6 @@ function ProductModal({
             value={values.storeName}
             onChange={formik.handleChange}
             onBlur={formik.handleBlur}
-          />
-          <Select
-            label={t("category")}
-            name="categoryId"
-            disabled={busy}
-            data={categoryData}
-            value={values.categoryId || ""}
-            onChange={(value) => formik.setFieldValue("categoryId", value || "")}
-            onBlur={() => formik.setFieldTouched("categoryId", true)}
-            allowDeselect={false}
           />
           <TextInput
             label={t("image_url")}
