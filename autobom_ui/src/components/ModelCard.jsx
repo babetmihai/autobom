@@ -66,7 +66,7 @@ function ModelCard({
         tabIndex={0}
         aria-label={t("open_product", { name: view.name || view.id })}
       >
-        <div className="relative aspect-[4/3] shrink-0 overflow-hidden bg-gray-100">
+        <div className="relative flex aspect-[4/3] shrink-0 items-center justify-center overflow-hidden bg-gray-100">
           {sourceLabel &&
             <Badge
               className="absolute left-1.5 top-1.5 z-10 max-w-[calc(100%-0.75rem)]"
@@ -82,7 +82,7 @@ function ModelCard({
               src={view.imageUrl}
               alt={view.name || t("model")}
               loading="lazy"
-              className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+              className="max-h-full max-w-full object-contain object-center transition-transform duration-300 group-hover:scale-105"
             />
           }
           {!view.imageUrl &&
