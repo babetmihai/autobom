@@ -91,7 +91,8 @@ export default function CatalogPage() {
   return (
     <AppShell header={<AppHeader />}>
       <div className="mb-4 flex flex-wrap items-center gap-2">
-        <div className="flex items-center">
+        <div className="flex items-center gap-1.5">
+          <ProductUrlImport />
           <Tooltip label={t("new_product")}>
             <ActionIcon
               variant="subtle"
@@ -109,7 +110,6 @@ export default function CatalogPage() {
               <IconPlus size={18} stroke={1.75} />
             </ActionIcon>
           </Tooltip>
-          <ProductUrlImport />
           <Tooltip label={t("refresh_models")}>
             <ActionIcon
               variant="subtle"

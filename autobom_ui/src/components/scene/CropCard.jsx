@@ -1,8 +1,8 @@
 import _ from "lodash"
 import { ActionIcon, Tooltip } from "@mantine/core"
-import { IconPlayerPlay, IconRefresh } from "@tabler/icons-react"
+import { IconPlayerPlay, IconRefresh, IconTrash } from "@tabler/icons-react"
 import { cn, materialCardClass, STEP_STATUS } from "../../lib/index.js"
-import { cropMatchingStatus, requestCropMatch } from "../../lib/scenes.js"
+import { cropMatchingStatus, deleteCrop, requestCropMatch } from "../../lib/scenes.js"
 import { useLoader } from "../../lib/loaders.js"
 import MatchRow from "./MatchRow.jsx"
 import { useTranslation } from "react-i18next"
@@ -36,6 +36,7 @@ export default function CropCard({
   const generating = waiting || processing
   const hasMatches = sorted.length > 0
   const matching = useLoader(sceneId && id ? `scenes.crop.${sceneId}.${id}` : "")
+  const deleting = useLoader(sceneId && id ? `scenes.crop.delete.${sceneId}.${id}` : "")
 
   let matchTitle = t("match_catalog")
   if (failed) matchTitle = t("retry")
@@ -47,6 +48,12 @@ export default function CropCard({
     event.stopPropagation()
     if ((completed || hasMatches) && !window.confirm(t("reprocess_this_matching"))) return
     void requestCropMatch(scene, id)
+  }
+
+  const onDelete = (event) => {
+    event.stopPropagation()
+    if (!window.confirm(t("delete_this_crop"))) return
+    void deleteCrop(scene, id)
   }
 
   return (
@@ -89,7 +96,7 @@ export default function CropCard({
                   size="lg"
                   radius="xl"
                   aria-label={matchTitle}
-                  disabled={generating}
+                  disabled={generating || deleting}
                   loading={matching || generating}
                   onClick={onMatch}
                 >
@@ -99,6 +106,22 @@ export default function CropCard({
                   {!showRefresh &&
                     <IconPlayerPlay size={18} stroke={1.75} />
                   }
+                </ActionIcon>
+              </span>
+            </Tooltip>
+            <Tooltip label={t("delete")}>
+              <span onClick={(event) => event.stopPropagation()}>
+                <ActionIcon
+                  variant="subtle"
+                  color="red"
+                  size="lg"
+                  radius="xl"
+                  aria-label={t("delete")}
+                  disabled={generating || deleting}
+                  loading={deleting}
+                  onClick={onDelete}
+                >
+                  <IconTrash size={18} stroke={1.75} />
                 </ActionIcon>
               </span>
             </Tooltip>

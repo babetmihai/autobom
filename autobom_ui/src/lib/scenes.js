@@ -397,6 +397,68 @@ export const requestSceneStep = async (scene, kind) => {
   }
 }
 
+export const deleteCrop = async (scene, cropId) => {
+  const { id, crops, matches, status } = scene || {}
+  if (!id || !cropId) return
+
+  const cropList = crops || []
+  const crop = _.find(cropList, { id: cropId })
+  if (!crop) return
+
+  const updatedAt = Date.now()
+  const nextCrops = _.filter(cropList, (item) => item.id !== cropId)
+  const nextMatches = _.filter(matches || [], (item) => item.cropId !== cropId)
+  const matchingBusy = _.some(nextCrops, (item) => {
+    const step = item.status
+    return step === STEP_STATUS.PENDING || step === STEP_STATUS.PROCESSING
+  })
+  const matchingDone = _.some(nextCrops, (item) => item.status === STEP_STATUS.COMPLETED)
+  const nextStatus = { ...(status || {}) }
+  const hasMatching = matchingDone ? TRUE : FALSE
+  const patch = {
+    updatedAt,
+    crops: nextCrops,
+    matches: nextMatches,
+    hasMatching
+  }
+
+  if (!matchingBusy) {
+    if (matchingDone) {
+      patch["status.matching"] = STEP_STATUS.COMPLETED
+      nextStatus.matching = STEP_STATUS.COMPLETED
+    } else {
+      patch["status.matching"] = deleteField()
+      delete nextStatus.matching
+    }
+  }
+
+  const loaderPath = `scenes.crop.delete.${id}.${cropId}`
+  setLoader(loaderPath)
+  try {
+    await updateDoc(getDocRef("scenes", id), patch)
+    sceneActions.update(id, (current = {}) => ({
+      ...current,
+      status: nextStatus,
+      crops: nextCrops,
+      matches: nextMatches,
+      hasMatching,
+      updatedAt
+    }))
+    sceneAppActions.update("list", (list = EMPTY_ARRAY) =>
+      list.map((item) => {
+        if (item.id !== id) return item
+        return { ...item, status: nextStatus, crops: nextCrops, matches: nextMatches, updatedAt }
+      })
+    )
+    showBanner("success", i18n.t("crop_deleted"))
+  } catch (error) {
+    console.error(error)
+    showBanner("error", error.message || i18n.t("could_not_delete_crop"))
+  } finally {
+    clearLoader(loaderPath)
+  }
+}
+
 export const requestCropMatch = async (scene, cropId) => {
   const { id, crops, matches, status } = scene || {}
   if (!id || !cropId) return

@@ -48,6 +48,12 @@ export default function AssetRow({
   const needsGlb = kind === "colada" && !hasGlb
   const canRequest = !generating && !busy && !needsGlb
   const showRefresh = available || failed
+  let requestVariant = "subtle"
+  let requestColor = "gray"
+  if (kind === "glb" && !available) {
+    requestVariant = "filled"
+    requestColor = "dark"
+  }
   const { statusClass, dotClass, avatarClass } = materialStatusTone({
     ready: available,
     generating,
@@ -137,8 +143,8 @@ export default function AssetRow({
             <Tooltip label={requestTitle}>
               <span>
                 <ActionIcon
-                  variant="subtle"
-                  color="gray"
+                  variant={requestVariant}
+                  color={requestColor}
                   size="lg"
                   radius="xl"
                   aria-label={requestTitle}
