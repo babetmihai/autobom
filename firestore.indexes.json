@@ -100,7 +100,7 @@
           "order": "ASCENDING"
         },
         {
-          "fieldPath": "__name__",
+          "fieldPath": "createdAt",
           "order": "DESCENDING"
         }
       ]

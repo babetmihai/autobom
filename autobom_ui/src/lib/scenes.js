@@ -98,7 +98,8 @@ export const fetchScenes = async ({ reset = true } = {}) => {
     const rawScenes = await sceneService.list({
       pageSize: SCENES_PAGE_SIZE,
       lastId: reset ? undefined : lastId,
-      createdBy
+      createdBy,
+      orderByField: "createdAt"
     })
 
     for (const scene of rawScenes) {
@@ -129,7 +130,8 @@ export const loadMoreScenes = async () => {
     const rawScenes = await sceneService.list({
       pageSize: SCENES_PAGE_SIZE,
       lastId,
-      createdBy
+      createdBy,
+      orderByField: "createdAt"
     })
 
     for (const scene of rawScenes) {
