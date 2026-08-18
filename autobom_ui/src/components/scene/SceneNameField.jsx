@@ -1,5 +1,4 @@
 import React from "react"
-import { TextInput } from "@mantine/core"
 import { resolveSceneName, updateSceneName } from "../../lib/scenes.js"
 import { useLoader } from "../../lib/loaders.js"
 import { useTranslation } from "react-i18next"
@@ -7,13 +6,14 @@ import { useTranslation } from "react-i18next"
 
 export default function SceneNameField({ scene }) {
   const { t } = useTranslation()
+  const { id, name, createdAt } = scene || {}
   const displayName = resolveSceneName(scene)
   const [draft, setDraft] = React.useState(displayName)
-  const saving = useLoader(`scenes.rename.${scene.id}`)
+  const saving = useLoader(`scenes.rename.${id}`)
 
   React.useEffect(() => {
     setDraft(resolveSceneName(scene))
-  }, [scene?.id, scene?.name, scene?.createdAt])
+  }, [id, name, createdAt])
 
   const save = async () => {
     const trimmed = draft.trim()
@@ -22,24 +22,23 @@ export default function SceneNameField({ scene }) {
       return
     }
 
-    const stored = scene?.name?.trim()
+    const stored = (name || "").trim()
     if (stored) {
       if (stored === trimmed) return
     } else if (trimmed === displayName) {
       return
     }
 
-    await updateSceneName(scene.id, trimmed)
+    await updateSceneName(id, trimmed)
   }
 
   return (
-    <TextInput
-      id={`scene-name-${scene.id}`}
-      label={t("scene_name")}
+    <input
+      id={`scene-name-${id}`}
+      aria-label={t("scene_name")}
       value={draft}
       disabled={saving}
-      mb="md"
-      maw={28 * 16}
+      className="m-0 w-full bg-transparent text-sm font-medium text-gray-900 outline-none"
       onChange={(event) => setDraft(event.currentTarget.value)}
       onBlur={() => void save()}
       onKeyDown={(event) => {

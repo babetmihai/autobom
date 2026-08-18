@@ -17,6 +17,7 @@ export default function AppModal({
       title={name}
       centered
       size="lg"
+      radius="lg"
       className={className}
       classNames={{
         body: contentClassName

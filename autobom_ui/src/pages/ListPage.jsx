@@ -2,7 +2,7 @@ import React from "react"
 import { Link } from "react-router-dom"
 import { useSelector } from "react-redux"
 import _ from "lodash"
-import { Anchor, Button, Group, Loader, Paper, Text } from "@mantine/core"
+import { ActionIcon, Tooltip } from "@mantine/core"
 import { IconFileText } from "@tabler/icons-react"
 import { AppShell, PageHeader } from "../components/AppShell.jsx"
 import { selectListQuantities } from "../lib/list.js"
@@ -15,6 +15,7 @@ import {
   selectProducts
 } from "../lib/products.js"
 import { useTagListener } from "../lib/tags.js"
+import { cn, materialCardClass } from "../lib/index.js"
 import { useTranslation } from "react-i18next"
 
 export default function ListPage() {
@@ -65,6 +66,8 @@ export default function ListPage() {
   const listForBom = lines.map(({ product }) => product).filter(Boolean)
   const isEmpty = lineIds.length === 0
   const isLoading = loadingIds.length > 0
+  const pricedLine = _.find(lines, ({ view }) => (view || {}).currency)
+  const { currency: totalCurrency } = (pricedLine && pricedLine.view) || {}
 
   return (
     <AppShell
@@ -75,127 +78,102 @@ export default function ListPage() {
         />
       }
     >
-      <Group mb="md" justify="flex-end">
-        <Button
-          variant="default"
-          leftSection={<IconFileText size={16} stroke={1.75} />}
-          onClick={() => exportBOM({ quantities: listQuantities, list: listForBom })}
-          disabled={isEmpty}
-        >
-          {t("export_bom")}
-        </Button>
-      </Group>
-
+      <div className="mb-4 flex justify-end">
+        <Tooltip label={t("export_bom")}>
+          <span>
+            <ActionIcon
+              variant="subtle"
+              color="gray"
+              size="lg"
+              radius="xl"
+              aria-label={t("export_bom")}
+              disabled={isEmpty}
+              onClick={() => exportBOM({ quantities: listQuantities, list: listForBom })}
+            >
+              <IconFileText size={18} stroke={1.75} />
+            </ActionIcon>
+          </span>
+        </Tooltip>
+      </div>
       {isEmpty &&
-        <Paper
-          withBorder
-          p="xl"
-          radius="md"
-          className="border-dashed text-center"
-        >
-          <Text fw={500} size="sm">{t("your_list_is_empty")}</Text>
-          <Text size="sm" c="dimmed" mt="xs">
-            {t("import_catalog_models_hint")}
-          </Text>
-        </Paper>
+        <div className={cn(materialCardClass({ ready: false }), "py-10 text-center")}>
+          <p className="m-0 text-sm font-medium text-gray-700">{t("your_list_is_empty")}</p>
+          <p className="m-0 mt-1 text-xs text-gray-500">{t("import_catalog_models_hint")}</p>
+        </div>
       }
 
       {!isEmpty &&
-        <Paper withBorder radius="md" className="overflow-hidden shadow-sm">
-          <ul className="m-0 list-none divide-y divide-gray-100 p-0">
-            {lines.map(({ id, view, qty, lineTotal }) => {
-              const { price, currency, imageUrl, name, sku } = view || {}
-              const loading = loadingIds.includes(id)
-              const priceDisplay = formatPrice(price, currency)
-              const lineTotalDisplay = lineTotal != null
-                ? formatPrice(lineTotal, currency)
-                : null
+        <div className={cn(materialCardClass({ ready: true, padded: false }), "overflow-hidden")}>
+          <div className="divide-y divide-gray-100">
+          {lines.map(({ id, view, qty, lineTotal }) => {
+            const { price, currency, imageUrl, name, sku } = view || {}
+            const loading = _.includes(loadingIds, id)
+            const priceDisplay = formatPrice(price, currency)
+            const lineTotalDisplay = lineTotal != null
+              ? formatPrice(lineTotal, currency)
+              : null
 
-              return (
-                <li key={id} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center">
-                  <div className="flex min-w-0 flex-1 gap-3">
-                    <div className="h-16 w-16 shrink-0 overflow-hidden rounded-md bg-gray-100">
-                      {imageUrl &&
-                        <img src={imageUrl} alt="" className="h-full w-full object-cover" />
+            return (
+              <article key={id} className="flex items-center gap-3 px-4 py-3">
+                <div className="h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-gray-100">
+                  {imageUrl &&
+                    <img src={imageUrl} alt="" className="h-full w-full object-contain" />
+                  }
+                </div>
+                <div className="min-w-0 flex-1">
+                  {loading && !view &&
+                    <p className="m-0 text-sm text-gray-500">{t("loading")}</p>
+                  }
+                  {view &&
+                    <>
+                      <Link
+                        to={{
+                          pathname: `/product/${id}`,
+                          state: { from: "/list", fromLabel: "list" }
+                        }}
+                        className="block truncate text-sm font-medium text-gray-900"
+                      >
+                        {name || id}
+                      </Link>
+                      {sku &&
+                        <p className="m-0 mt-0.5 text-xs tabular-nums text-gray-400">{sku}</p>
                       }
-                      {!imageUrl &&
-                        <div className="flex h-full w-full items-center justify-center text-xs text-gray-400">—</div>
+                      {priceDisplay &&
+                        <p className="m-0 mt-1 text-sm font-semibold text-brand-600">{priceDisplay}</p>
                       }
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      {loading && !view &&
-                        <Text size="sm" c="dimmed">{t("loading")}</Text>
-                      }
-                      {view &&
-                        <>
-                          <Anchor
-                            component={Link}
-                            to={{
-                              pathname: `/product/${id}`,
-                              state: { from: "/list", fromLabel: "list" }
-                            }}
-                            className="block truncate text-sm font-semibold text-gray-800"
-                          >
-                            {name || id}
-                          </Anchor>
-                          {sku &&
-                            <Text
-                              size="xs"
-                              c="dimmed"
-                              mt={2}
-                              className="tabular-nums"
-                            >{sku}</Text>
-                          }
-                          {priceDisplay &&
-                            <Text
-                              size="sm"
-                              fw={500}
-                              c="brand.5"
-                              mt={4}
-                            >{priceDisplay}</Text>
-                          }
-                        </>
-                      }
-                      {!view && !loading &&
-                        <Text size="sm" className="truncate text-gray-600">{id}</Text>
-                      }
-                    </div>
-                  </div>
-
-                  <div className="flex shrink-0 items-center justify-between gap-3 sm:justify-end">
-                    <span className="min-w-[3rem] text-center text-sm font-semibold tabular-nums">{qty}</span>
-                    {lineTotalDisplay &&
-                      <span className="min-w-[5rem] text-right text-sm font-semibold tabular-nums text-gray-800">
-                        {lineTotalDisplay}
-                      </span>
-                    }
-                  </div>
-                </li>
-              )
-            })}
-          </ul>
-
+                    </>
+                  }
+                  {!view && !loading &&
+                    <p className="m-0 truncate text-sm text-gray-600">{id}</p>
+                  }
+                </div>
+                <div className="flex shrink-0 flex-col items-end gap-0.5">
+                  <span className="text-sm font-medium tabular-nums text-gray-900">{qty}</span>
+                  {lineTotalDisplay &&
+                    <span className="text-xs font-semibold tabular-nums text-brand-600">
+                      {lineTotalDisplay}
+                    </span>
+                  }
+                </div>
+              </article>
+            )
+          })}
           {hasPricedLines &&
-            <div className="flex items-center justify-end gap-3 border-t border-gray-100 bg-gray-50 px-4 py-3">
-              <Text size="sm" fw={500} c="dimmed">{t("grand_total")}</Text>
-              <Text
-                size="md"
-                fw={700}
-                c="brand.5"
-                className="tabular-nums"
-              >
-                {formatPrice(grandTotal, lines.find(({ view }) => view?.currency)?.view?.currency)}
-              </Text>
+            <div className="flex items-center justify-end gap-3 bg-gray-50 px-4 py-3">
+              <span className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                {t("grand_total")}
+              </span>
+              <span className="text-sm font-semibold tabular-nums text-brand-600">
+                {formatPrice(grandTotal, totalCurrency)}
+              </span>
             </div>
           }
-        </Paper>
+          </div>
+        </div>
       }
 
       {isLoading &&
-        <Group gap="xs" mt="sm">
-          <Loader size="sm" />
-          <Text size="sm" c="dimmed">{t("loading_product_details")}</Text>
-        </Group>
+        <p className="m-0 mt-3 text-xs text-gray-500">{t("loading_product_details")}</p>
       }
     </AppShell>
   )

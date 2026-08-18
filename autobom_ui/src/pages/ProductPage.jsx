@@ -2,28 +2,22 @@ import React from "react"
 import { Link, useHistory, useLocation, useParams } from "react-router-dom"
 import { useSelector } from "react-redux"
 import {
+  ActionIcon,
   Anchor,
-  Badge,
-  Button,
-  Center,
   Loader,
-  Paper,
-  Text,
-  Title
+  Text
 } from "@mantine/core"
 import { IconBox, IconChevronLeft, IconRefresh } from "@tabler/icons-react"
 import { AppHeader } from "../components/AppHeader"
 import { AppShell } from "../components/AppShell.jsx"
 import {
-  colorToHex,
   deleteProduct,
   fetchProduct,
-  formatDimensions,
   formatPrice,
-  getActiveTags,
   getProductPipelineView,
   isScrapePending,
   isUrlSource,
+  PRODUCT_MODEL_ASSET_KINDS,
   resolveProductView,
   retryProduct,
   selectProduct,
@@ -33,11 +27,15 @@ import {
 import { useTagListener } from "../lib/tags.js"
 import { selectListQuantities } from "../lib/list.js"
 import { useLoader } from "../lib/loaders.js"
+import AssetRow from "../components/AssetRow.jsx"
+import ProductAnalysis from "../components/ProductAnalysis.jsx"
+import ProductGroup from "../components/ProductGroup.jsx"
 import ProductPageActions from "../components/ProductPageActions.jsx"
 import { showBanner } from "../lib/banner/index.js"
-import { cn, STEP_STATUS } from "../lib/index.js"
+import { cn, materialCardClass, materialStatusTone, STEP_STATUS } from "../lib/index.js"
 import { glbNativeImport, isInSketchup, useSketchupEnvListener } from "../lib/sketchup.js"
 import { useTranslation } from "react-i18next"
+import _ from "lodash"
 
 
 export default function ProductPage() {
@@ -67,15 +65,28 @@ export default function ProductPage() {
   useSketchupEnvListener(setSketchupEnv)
 
   const view = resolveProductView(product)
-  const priceDisplay = formatPrice(view?.price, view?.currency)
-  const dimensionsDisplay = formatDimensions(view?.dimensions)
-  const tags = getActiveTags(view?.tags)
-  const colorHex = colorToHex(view?.color)
+  const {
+    name,
+    id: viewId,
+    sourceUrl,
+    description,
+    sku,
+    price,
+    currency,
+    imageUrl
+  } = view || {}
+  const priceDisplay = formatPrice(price, currency)
   const listCount = listQuantities[String(productId)] || 0
   const scrapePending = isScrapePending(view)
   const scrapeFailed = ((view && view.status) || {}).scrape === STEP_STATUS.FAILED
   const fromUrl = isUrlSource(view)
   const pipeline = getProductPipelineView(view)
+  const { generating: pipelineGenerating, failed: pipelineFailed, label: pipelineLabel } = pipeline || {}
+  const { statusClass, dotClass } = materialStatusTone({
+    ready: !pipelineGenerating && !pipelineFailed,
+    generating: pipelineGenerating,
+    failed: pipelineFailed
+  })
 
   const onDelete = async () => {
     if (!window.confirm(t("delete_this_product"))) return
@@ -103,44 +114,41 @@ export default function ProductPage() {
       </Anchor>
 
       {loading && !product &&
-        <Center py={48}>
-          <div className="text-center">
-            <Loader color="brand" mb="md" />
-            <Text c="dimmed">{t("loading_product")}</Text>
-          </div>
-        </Center>
+        <div className="flex flex-1 flex-col items-center justify-center py-12">
+          <Loader color="brand" />
+          <p className="m-0 mt-3 text-sm text-gray-500">{t("loading_product")}</p>
+        </div>
       }
 
       {!loading && !product &&
-        <Paper
-          withBorder
-          p="xl"
-          radius="md"
-          className="border-dashed text-center"
-        >
-          <Text fw={500} size="sm">{t("product_not_found")}</Text>
-        </Paper>
+        <div className={cn(materialCardClass({ ready: false }), "py-10 text-center")}>
+          <p className="m-0 text-sm font-medium text-gray-700">{t("product_not_found")}</p>
+        </div>
       }
 
       {product &&
-        <Paper withBorder radius="md" className="overflow-hidden shadow-sm">
-          <div className="flex flex-col lg:flex-row">
-            <div className="relative aspect-[4/3] shrink-0 bg-gray-100 lg:w-[min(100%,28rem)] lg:flex-1">
-              <Badge
-                className="absolute left-3 top-3 z-10 max-w-[calc(100%-1.5rem)]"
-                variant="light"
-                color={pipeline.color}
-              >
-                {pipeline.label}
-              </Badge>
-              {view.imageUrl &&
+        <div className="flex flex-col gap-4">
+        <article
+          className={cn(
+            materialCardClass({
+              ready: !pipelineGenerating && !pipelineFailed,
+              generating: pipelineGenerating,
+              failed: pipelineFailed,
+              padded: false
+            }),
+            "overflow-hidden"
+          )}
+        >
+          <div className="flex flex-col sm:flex-row">
+            <div className="relative aspect-[4/3] shrink-0 bg-gray-100 sm:w-[16rem]">
+              {imageUrl &&
                 <img
-                  src={view.imageUrl}
-                  alt={view.name || t("model")}
+                  src={imageUrl}
+                  alt={name || t("model")}
                   className="h-full w-full object-contain"
                 />
               }
-              {!view.imageUrl &&
+              {!imageUrl &&
                 <div className="flex h-full w-full flex-col items-center justify-center gap-2 px-4 text-gray-400">
                   {scrapePending &&
                     <Loader color="brand" />
@@ -158,129 +166,89 @@ export default function ProductPage() {
                       <Text size="xs" c="red" ta="center">
                         {t("could_not_scrape_this_url")}
                       </Text>
-                      <Button
-                        variant="default"
-                        size="compact-sm"
-                        leftSection={<IconRefresh size={16} stroke={1.75} />}
+                      <ActionIcon
+                        variant="subtle"
+                        color="gray"
+                        size="lg"
+                        radius="xl"
+                        aria-label={t("retry")}
                         onClick={(event) => {
                           event.stopPropagation()
                           void retryProduct(view)
                         }}
                       >
-                        {t("retry")}
-                      </Button>
+                        <IconRefresh size={18} stroke={1.75} />
+                      </ActionIcon>
                     </>
                   }
                 </div>
               }
             </div>
 
-            <div className="flex min-w-0 flex-1 flex-col p-4 sm:p-6">
-              <Title order={2} className="m-0 min-w-0 text-xl text-gray-800">
-                {view.name || view.id}
-              </Title>
-              {fromUrl && view.sourceUrl &&
-                <Anchor
-                  href={view.sourceUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  size="xs"
-                  c="brand"
-                  className="mt-1 truncate"
-                >
-                  {view.sourceUrl}
-                </Anchor>
-              }
-              {view.description &&
-                <Text
-                  size="sm"
-                  c="gray.6"
-                  mt="sm"
-                  className="leading-relaxed"
-                >{view.description}</Text>
-              }
-              {view.sku &&
-                <Text
-                  size="sm"
-                  c="dimmed"
-                  mt="xs"
-                  className="tabular-nums"
-                >{view.sku}</Text>
-              }
-
-              {(view.color || dimensionsDisplay) &&
-                <div className="mt-4 flex flex-wrap items-center gap-2 border-b border-gray-100 pb-4">
-                  {view.color &&
-                    <div className="flex min-w-0 items-center gap-2">
-                      <span
-                        className={cn(
-                          "h-5 w-5 shrink-0 rounded-full border border-gray-300",
-                          !colorHex && "bg-gray-200"
-                        )}
-                        style={colorHex ? { backgroundColor: colorHex } : undefined}
-                        title={view.color}
-                        aria-label={t("color", { color: view.color })}
-                      />
-                      <span className="truncate text-sm capitalize text-gray-600">{view.color}</span>
-                    </div>
-                  }
-                  {view.color && dimensionsDisplay &&
-                    <span className="shrink-0 text-gray-300" aria-hidden="true">·</span>
-                  }
-                  {dimensionsDisplay &&
-                    <span className="text-sm tabular-nums text-gray-500">{dimensionsDisplay}</span>
-                  }
-                </div>
-              }
-
-              {tags.length > 0 &&
-                <div className="mt-4 flex flex-wrap items-center gap-1.5">
-                  {tags.map((tag) => (
-                    <Badge
-                      key={tag}
-                      size="sm"
-                      variant="light"
-                      color="gray"
-                      title={tag}
-                      className="capitalize"
-                    >
-                      {tag}
-                    </Badge>
-                  ))}
-                </div>
-              }
-
-              {priceDisplay &&
-                <Text
-                  mt="md"
-                  size="lg"
-                  fw={700}
-                  c="brand.5"
-                >{priceDisplay}</Text>
-              }
-
-              {inSketchup && listCount > 0 &&
-                <Text
-                  mt="sm"
-                  size="sm"
-                  fw={500}
-                  c="green.8"
-                >
-                  {t("in_list", { count: listCount })}
-                </Text>
-              }
-
+            <div className="flex min-w-0 flex-1 items-start gap-1 px-4 py-3">
+              <div className="min-w-0 flex-1">
+                <p className="m-0 truncate text-sm font-medium text-gray-900">
+                  {name || viewId}
+                </p>
+                <p className={cn("m-0 mt-0.5 flex items-center gap-1.5 text-xs leading-4", statusClass)}>
+                  <span className={cn("h-1.5 w-1.5 shrink-0 rounded-full", dotClass)} />
+                  <span className="truncate">{pipelineLabel}</span>
+                </p>
+                {fromUrl && sourceUrl &&
+                  <Anchor
+                    href={sourceUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    size="xs"
+                    c="brand"
+                    className="mt-1.5 block truncate"
+                  >
+                    {sourceUrl}
+                  </Anchor>
+                }
+                {description &&
+                  <p className="m-0 mt-1.5 text-sm leading-relaxed text-gray-500">
+                    {description}
+                  </p>
+                }
+                {sku &&
+                  <p className="m-0 mt-1 text-xs tabular-nums text-gray-400">{sku}</p>
+                }
+                {priceDisplay &&
+                  <p className="m-0 mt-2 text-sm font-semibold text-brand-600">{priceDisplay}</p>
+                }
+                {inSketchup && listCount > 0 &&
+                  <p className="m-0 mt-1 text-xs font-medium text-green-800">
+                    {t("in_list", { count: listCount })}
+                  </p>
+                }
+              </div>
               <ProductPageActions
                 view={view}
                 inSketchup={inSketchup}
                 glbSupported={glbSupported}
                 isDeleting={isDeleting}
                 onDelete={onDelete}
-                className="mt-6 border-t border-gray-100 pt-4"
               />
             </div>
           </div>
-        </Paper>
+        </article>
+
+        <ProductAnalysis product={view} />
+
+        <ProductGroup title={t("assets")}>
+          {_.map(PRODUCT_MODEL_ASSET_KINDS, (kind) => (
+            <AssetRow
+              key={kind}
+              product={view}
+              kind={kind}
+              inSketchup={inSketchup}
+              glbSupported={glbSupported}
+              plain
+            />
+          ))}
+        </ProductGroup>
+        </div>
       }
     </AppShell>
   )

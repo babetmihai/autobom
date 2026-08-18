@@ -1,8 +1,8 @@
 import React from "react"
 import { Link, useParams } from "react-router-dom"
 import { useSelector } from "react-redux"
-import { Anchor, Button, Group, Loader, Paper, Text, Title } from "@mantine/core"
-import { IconChevronLeft, IconClock, IconRefresh } from "@tabler/icons-react"
+import { ActionIcon, Anchor, Tooltip } from "@mantine/core"
+import { IconChevronLeft, IconRefresh } from "@tabler/icons-react"
 import { SceneAnalyzerHeader } from "../components/SceneAnalyzerHeader"
 import { AppShell } from "../components/AppShell.jsx"
 import SceneUpload from "../components/scene/SceneUpload.jsx"
@@ -27,6 +27,7 @@ import {
 import { useImportListener } from "../lib/products.js"
 import { useTagListener } from "../lib/tags.js"
 import { useLoader } from "../lib/loaders.js"
+import { cn, materialCardClass, materialStatusTone } from "../lib/index.js"
 import { glbNativeImport, isInSketchup, useSketchupEnvListener } from "../lib/sketchup.js"
 import { useTranslation } from "react-i18next"
 
@@ -50,7 +51,8 @@ export default function SceneAnalyzerPage() {
   const selectCropFromScene = (cropId) => {
     setSelectedCropId(cropId)
     requestAnimationFrame(() => {
-      cropCardRefs.current[cropId]?.scrollIntoView({ behavior: "smooth", block: "center" })
+      const el = cropCardRefs.current[cropId]
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "center" })
     })
   }
 
@@ -61,24 +63,31 @@ export default function SceneAnalyzerPage() {
 
   const inSketchup = isInSketchup()
   const glbSupported = !inSketchup || !sketchupEnv || glbNativeImport(sketchupEnv)
+  const { crops, status } = scene || {}
 
   React.useEffect(() => {
-    if (!scene?.crops?.length) {
+    const cropList = crops || []
+    if (!cropList.length) {
       setSelectedCropId(null)
       return
     }
-    const stillSelected = scene.crops.some((crop) => crop.id === selectedCropId)
+    const stillSelected = cropList.some((crop) => crop.id === selectedCropId)
     if (!stillSelected) {
-      setSelectedCropId(scene.crops[0].id)
+      setSelectedCropId(cropList[0].id)
     }
-  }, [scene?.crops, selectedCropId])
+  }, [crops, selectedCropId])
 
-  const queued = scene && sceneIsQueued(scene.status)
-  const processing = scene && sceneIsProcessing(scene.status)
-  const failed = scene && sceneIsFailed(scene.status)
-  const analysisComplete = scene && sceneMatchingComplete(scene.status)
+  const queued = scene && sceneIsQueued(status)
+  const processing = scene && sceneIsProcessing(status)
+  const failed = scene && sceneIsFailed(status)
+  const analysisComplete = scene && sceneMatchingComplete(status)
   const hasCrops = cropsWithMatches.length > 0
   const retrying = useLoader(sceneId ? `scenes.retry.${sceneId}` : "")
+  const { statusClass, dotClass } = materialStatusTone({
+    ready: Boolean(scene) && !processing && !failed && !queued,
+    generating: Boolean(processing),
+    failed: Boolean(failed)
+  })
 
   return (
     <AppShell header={<SceneAnalyzerHeader />}>
@@ -99,31 +108,43 @@ export default function SceneAnalyzerPage() {
 
       {!sceneId && <SceneList />}
 
-      {scene && <SceneNameField scene={scene} />}
-
       {scene &&
-        <Group gap="xs" mb="md">
-          {queued &&
-            <IconClock size={16} stroke={1.75} className="text-gray-500" />
-          }
-          {processing &&
-            <Loader size={16} color="brand" />
-          }
-          <Text size="sm" c={failed ? "red.7" : "dimmed"}>
-            {sceneStatusLabel(scene.status)}
-          </Text>
-          {failed &&
-            <Button
-              variant="default"
-              size="compact-sm"
-              loading={retrying}
-              leftSection={!retrying && <IconRefresh size={16} stroke={1.75} />}
-              onClick={() => void retryScene(scene)}
-            >
-              {t("retry")}
-            </Button>
-          }
-        </Group>
+        <article
+          className={cn(
+            materialCardClass({
+              ready: !processing && !failed,
+              generating: processing,
+              failed,
+              padded: false
+            }),
+            "mb-4"
+          )}
+        >
+          <div className="flex items-start gap-1 px-4 py-3">
+            <div className="min-w-0 flex-1">
+              <SceneNameField scene={scene} />
+              <p className={cn("m-0 mt-0.5 flex items-center gap-1.5 text-xs leading-4", statusClass)}>
+                <span className={cn("h-1.5 w-1.5 shrink-0 rounded-full", dotClass)} />
+                <span className="truncate">{sceneStatusLabel(status)}</span>
+              </p>
+            </div>
+            {failed &&
+              <Tooltip label={t("retry")}>
+                <ActionIcon
+                  variant="subtle"
+                  color="gray"
+                  size="lg"
+                  radius="xl"
+                  aria-label={t("retry")}
+                  loading={retrying}
+                  onClick={() => void retryScene(scene)}
+                >
+                  <IconRefresh size={18} stroke={1.75} />
+                </ActionIcon>
+              </Tooltip>
+            }
+          </div>
+        </article>
       }
 
       {scene &&
@@ -136,14 +157,9 @@ export default function SceneAnalyzerPage() {
 
       {hasCrops &&
         <section>
-          <Title
-            order={3}
-            size="sm"
-            mb="sm"
-            className="text-gray-700"
-          >
+          <h3 className="m-0 mb-2 px-1 text-xs font-medium uppercase tracking-wide text-gray-500">
             {t("detected_furniture", { count: cropsWithMatches.length })}
-          </Title>
+          </h3>
           <div className="flex flex-col gap-4">
             {cropsWithMatches.map(({ crop, matches }) => (
               <CropCard
@@ -157,7 +173,7 @@ export default function SceneAnalyzerPage() {
                 productsById={productsById}
                 selected={crop.id === selectedCropId}
                 onSelect={setSelectedCropId}
-                sceneStatus={scene?.status}
+                sceneStatus={status}
                 sceneId={sceneId}
                 inSketchup={inSketchup}
                 glbSupported={glbSupported}
@@ -168,23 +184,14 @@ export default function SceneAnalyzerPage() {
       }
 
       {scene && !hasCrops && processing &&
-        <Text size="sm" c="dimmed">
-          {t("scanning_scene")}
-        </Text>
+        <p className="m-0 text-sm text-gray-500">{t("scanning_scene")}</p>
       }
 
       {scene && !hasCrops && analysisComplete && !failed &&
-        <Paper
-          withBorder
-          p="xl"
-          radius="md"
-          className="border-dashed text-center"
-        >
-          <Text fw={500} size="sm">{t("no_furniture_detected")}</Text>
-          <Text size="xs" c="dimmed" mt={4}>
-            {t("try_clearer_photo")}
-          </Text>
-        </Paper>
+        <div className={cn(materialCardClass({ ready: false }), "py-10 text-center")}>
+          <p className="m-0 text-sm font-medium text-gray-700">{t("no_furniture_detected")}</p>
+          <p className="m-0 mt-1 text-xs text-gray-500">{t("try_clearer_photo")}</p>
+        </div>
       }
     </AppShell>
   )

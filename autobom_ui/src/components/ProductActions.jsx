@@ -1,29 +1,25 @@
-import { Button, Group } from "@mantine/core"
+import { ActionIcon, Tooltip } from "@mantine/core"
+import { IconBox, IconFileZip, IconPlus } from "@tabler/icons-react"
 import { useTranslation } from "react-i18next"
 import {
   addOrImportProduct,
   importProductBundle,
   importProductGlb
 } from "../lib/products.js"
-import InsertButton from "./InsertButton.jsx"
 import { useLoader } from "../lib/loaders.js"
-import { cn } from "../lib/index.js"
 
 export default function ProductActions({
   view,
   inSketchup = true,
-  glbSupported = true,
-  className,
-  inline = false
+  glbSupported = true
 }) {
   const { t } = useTranslation()
-  const productId = view?.id
+  const { id: productId, glbUrl, bundleUrl } = view || {}
   const importingGlb = useLoader(productId ? `importingModel.glb.${productId}` : "")
   const importingDae = useLoader(productId ? `importingModel.dae.${productId}` : "")
 
   if (!productId) return null
 
-  const { glbUrl, bundleUrl } = view || {}
   const useGlbImport = inSketchup && Boolean(glbUrl) && glbSupported
   const useBundleImport = inSketchup && !useGlbImport && Boolean(bundleUrl)
   const glbBlocked = inSketchup && Boolean(glbUrl) && !glbSupported && !bundleUrl
@@ -31,62 +27,69 @@ export default function ProductActions({
   const importingPrimary = (useGlbImport && importingGlb) || (useBundleImport && importingDae)
   const importing = importingGlb || importingDae
 
-  const primaryTitle = (() => {
-    if (useGlbImport) return t("insert_glb_model")
-    if (useBundleImport) return t("insert_collada_model")
-    if (glbBlocked) return t("glb_requires_sketchup_2025")
-    return t("no_importable_model")
-  })()
+  let insertTitle = t("no_importable_model")
+  if (useGlbImport) insertTitle = t("insert_glb_model")
+  if (useBundleImport) insertTitle = t("insert_collada_model")
+  if (glbBlocked) insertTitle = t("glb_requires_sketchup_2025")
 
   const stop = (event) => event.stopPropagation()
 
   return (
-    <Group
-      gap={4}
-      justify="flex-end"
-      wrap="nowrap"
-      className={cn(
-        "shrink-0",
-        !inline && "border-t border-gray-100 bg-gray-50 px-2 py-1.5",
-        className
-      )}
-      onClick={stop}
-    >
+    <div className="flex shrink-0 items-center" onClick={stop} onKeyDown={stop}>
       {inSketchup &&
-        <InsertButton
-          title={primaryTitle}
-          loading={importingPrimary}
-          disabled={!canPrimary || importing}
-          onClick={(event) => {
-            stop(event)
-            void addOrImportProduct(view, { inSketchup, glbSupported })
-          }}
-        />
+        <Tooltip label={insertTitle}>
+          <span>
+            <ActionIcon
+              variant="subtle"
+              color="brand"
+              size="lg"
+              radius="xl"
+              aria-label={insertTitle}
+              disabled={!canPrimary || importing}
+              loading={importingPrimary}
+              onClick={() => void addOrImportProduct(view, { inSketchup, glbSupported })}
+            >
+              <IconPlus size={18} stroke={1.75} />
+            </ActionIcon>
+          </span>
+        </Tooltip>
       }
       {!inSketchup && glbUrl &&
-        <Button
-          size="compact-xs"
-          variant="default"
-          title={t("download_glb_model")}
-          loading={importingGlb}
-          disabled={importing}
-          onClick={() => importProductGlb(view)}
-        >
-          {t("glb")}
-        </Button>
+        <Tooltip label={t("download_glb_model")}>
+          <span>
+            <ActionIcon
+              variant="subtle"
+              color="brand"
+              size="lg"
+              radius="xl"
+              aria-label={t("download_glb_model")}
+              disabled={importing}
+              loading={importingGlb}
+              onClick={() => void importProductGlb(view)}
+            >
+              <IconBox size={18} stroke={1.75} />
+            </ActionIcon>
+          </span>
+        </Tooltip>
       }
       {!inSketchup && bundleUrl &&
-        <Button
-          size="compact-xs"
-          variant="default"
-          title={t("download_collada_bundle")}
-          loading={importingDae}
-          disabled={importing}
-          onClick={() => importProductBundle(view)}
-        >
-          {t("dae")}
-        </Button>
+        <Tooltip label={t("download_collada_bundle")}>
+          <span>
+            <ActionIcon
+              variant="subtle"
+              color="brand"
+              size="lg"
+              radius="xl"
+              aria-label={t("download_collada_bundle")}
+              disabled={importing}
+              loading={importingDae}
+              onClick={() => void importProductBundle(view)}
+            >
+              <IconFileZip size={18} stroke={1.75} />
+            </ActionIcon>
+          </span>
+        </Tooltip>
       }
-    </Group>
+    </div>
   )
 }

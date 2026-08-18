@@ -160,7 +160,7 @@ function ProductModal({
             <Group align="flex-end" gap="sm" wrap="nowrap">
               <button
                 type="button"
-                className="box-border h-[7.5rem] w-[7.5rem] shrink-0 cursor-pointer appearance-none overflow-hidden rounded-lg border border-gray-200 bg-gray-100 p-0"
+                className="box-border h-[7.5rem] w-[7.5rem] shrink-0 cursor-pointer appearance-none overflow-hidden rounded-xl border border-gray-200 bg-gray-100 p-0"
                 style={imageButtonStyle}
                 disabled={busy}
                 onClick={openImagePicker}

@@ -2,17 +2,14 @@ import React from "react"
 import {
   Anchor,
   Button,
-  Center,
-  Paper,
   PasswordInput,
   Stack,
-  Text,
-  TextInput,
-  Title
+  TextInput
 } from "@mantine/core"
 import { useTranslation } from "react-i18next"
 import { signInWithEmail, signUpWithEmail } from "../lib/auth.js"
 import { useLoader } from "../lib/loaders.js"
+import { cn, materialCardClass } from "../lib/index.js"
 
 
 export default function LoginPage() {
@@ -35,21 +32,24 @@ export default function LoginPage() {
     void signUpWithEmail(email, password)
   }
 
+  let submitLabel = t("create_account")
+  if (busy) submitLabel = t("please_wait")
+  if (!busy && isSignIn) submitLabel = t("sign_in")
+
+  let switchLabel = t("already_have_an_account_sign_in")
+  if (isSignIn) switchLabel = t("need_an_account_sign_up")
+
+  let subtitle = t("create_an_account")
+  if (isSignIn) subtitle = t("sign_in_to_your_catalogue")
+
+  let passwordAutoComplete = "new-password"
+  if (isSignIn) passwordAutoComplete = "current-password"
+
   return (
-    <Center h="100vh" bg="gray.1" px="md">
-      <Paper
-        w="100%"
-        maw={24 * 16}
-        p={0}
-        bg="transparent"
-        shadow="none"
-      >
-        <Title order={1} size="h3">
-          Autobom
-        </Title>
-        <Text size="sm" c="dimmed" mt={4}>
-          {(isSignIn && t("sign_in_to_your_catalogue")) || t("create_an_account")}
-        </Text>
+    <div className="flex min-h-screen items-center justify-center bg-gray-100 px-4">
+      <div className={cn(materialCardClass({ ready: true }), "w-full max-w-[24rem]")}>
+        <h1 className="m-0 text-lg font-medium text-gray-800">Autobom</h1>
+        <p className="m-0 mt-1 text-xs leading-4 text-gray-500">{subtitle}</p>
         <form className="mt-4" onSubmit={onSubmit}>
           <Stack gap="sm">
             <TextInput
@@ -63,7 +63,7 @@ export default function LoginPage() {
             />
             <PasswordInput
               label={t("password")}
-              autoComplete={isSignIn ? "current-password" : "new-password"}
+              autoComplete={passwordAutoComplete}
               value={password}
               onChange={(event) => setPassword(event.currentTarget.value)}
               required
@@ -73,10 +73,11 @@ export default function LoginPage() {
             <Button
               type="submit"
               color="brand"
+              radius="xl"
               loading={busy}
               mt={4}
             >
-              {(busy && t("please_wait")) || (isSignIn && t("sign_in")) || t("create_account")}
+              {submitLabel}
             </Button>
           </Stack>
         </form>
@@ -88,9 +89,9 @@ export default function LoginPage() {
           disabled={busy}
           onClick={() => setMode(isSignIn ? "signUp" : "signIn")}
         >
-          {(isSignIn && t("need_an_account_sign_up")) || t("already_have_an_account_sign_in")}
+          {switchLabel}
         </Anchor>
-      </Paper>
-    </Center>
+      </div>
+    </div>
   )
 }

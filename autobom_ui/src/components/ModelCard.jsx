@@ -1,61 +1,92 @@
+import { ActionIcon, Loader, Text, Tooltip } from "@mantine/core"
+import { IconBox, IconFileZip, IconPlus, IconRefresh } from "@tabler/icons-react"
 import { useHistory } from "react-router-dom"
-import { Badge, Button, Loader, Text } from "@mantine/core"
-import { IconBox, IconRefresh } from "@tabler/icons-react"
 import {
-  colorToHex,
-  formatDimensions,
+  addOrImportProduct,
   formatPrice,
   getProductPipelineView,
-  getVisibleTags,
+  importProductBundle,
+  importProductGlb,
   isScrapePending,
   isUrlSource,
   resolveProductView,
   retryProduct
 } from "../lib/products"
-import ProductActions from "./ProductActions.jsx"
-import { cn, STEP_STATUS } from "../lib/index.js"
+import { useLoader } from "../lib/loaders.js"
+import { cn, materialCardClass, materialStatusTone, STEP_STATUS } from "../lib/index.js"
 import { useTranslation } from "react-i18next"
 
-function ModelCard({
+export default function ModelCard({
   model,
   listCount,
   glbSupported = true,
   inSketchup = true
 }) {
   const { t } = useTranslation()
-  const view = resolveProductView(model)
-  const priceDisplay = formatPrice(view.price, view.currency)
-  const dimensionsDisplay = formatDimensions(view.dimensions)
-  const { visible: visibleTags, overflow: tagOverflow } = getVisibleTags(view.tags)
-  const colorHex = colorToHex(view.color)
-  const hasColor = Boolean(view.color)
-  const hasMetaStrip = hasColor || dimensionsDisplay
-  const hasTags = visibleTags.length > 0
   const history = useHistory()
+  const view = resolveProductView(model)
+  const {
+    id: productId,
+    name,
+    imageUrl,
+    sourceUrl,
+    sku,
+    price,
+    currency,
+    status,
+    glbUrl,
+    bundleUrl
+  } = view || {}
+  const priceDisplay = formatPrice(price, currency)
   const fromUrl = isUrlSource(view)
   const scrapePending = isScrapePending(view)
-  const scrapeFailed = (view.status || {}).scrape === STEP_STATUS.FAILED
+  const scrapeFailed = (status || {}).scrape === STEP_STATUS.FAILED
   const pipeline = getProductPipelineView(view)
+  const { generating, failed, label: pipelineLabel } = pipeline || {}
+  const { statusClass, dotClass } = materialStatusTone({
+    ready: !generating && !failed,
+    generating,
+    failed
+  })
+
+  const importingGlb = useLoader(productId ? `importingModel.glb.${productId}` : "")
+  const importingDae = useLoader(productId ? `importingModel.dae.${productId}` : "")
+  const useGlbImport = inSketchup && Boolean(glbUrl) && glbSupported
+  const useBundleImport = inSketchup && !useGlbImport && Boolean(bundleUrl)
+  const glbBlocked = inSketchup && Boolean(glbUrl) && !glbSupported && !bundleUrl
+  const canPrimary = useGlbImport || useBundleImport
+  const importingPrimary = (useGlbImport && importingGlb) || (useBundleImport && importingDae)
+  const importing = importingGlb || importingDae
+
+  let insertTitle = t("no_importable_model")
+  if (useGlbImport) insertTitle = t("insert_glb_model")
+  if (useBundleImport) insertTitle = t("insert_collada_model")
+  if (glbBlocked) insertTitle = t("glb_requires_sketchup_2025")
 
   const openProduct = () => {
     const from = history.location.pathname
-    const fromLabel = (from.startsWith("/scene-analyzer") && "scene") || "catalog"
+    let fromLabel = "catalog"
+    if (from.startsWith("/scene-analyzer")) fromLabel = "scene"
     history.push({
-      pathname: `/product/${view.id}`,
+      pathname: `/product/${productId}`,
       state: { from, fromLabel }
     })
   }
 
+  const stop = (event) => event.stopPropagation()
+
   return (
-    <li
-      className={cn(
-        "group flex min-w-[260px] max-w-full grow shrink basis-[260px] flex-col overflow-hidden rounded-lg bg-white",
-        "shadow-[0_1px_3px_rgba(0,0,0,0.08)] sm:max-w-[calc((100%-1rem)/2)] lg:max-w-[calc((100%-2rem)/3)] xl:max-w-[calc((100%-3rem)/4)]",
-        "transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-[0_4px_12px_rgba(0,0,0,0.12)]"
-      )}
-    >
-      <div
-        className="flex min-h-0 flex-1 cursor-pointer flex-col"
+    <li className="min-w-0">
+      <article
+        className={cn(
+          materialCardClass({
+            ready: !generating && !failed,
+            generating,
+            failed,
+            padded: false
+          }),
+          "flex h-full w-full cursor-pointer flex-col overflow-hidden"
+        )}
         onClick={openProduct}
         onKeyDown={(event) => {
           if (event.key === "Enter" || event.key === " ") {
@@ -65,147 +96,144 @@ function ModelCard({
         }}
         role="link"
         tabIndex={0}
-        aria-label={t("open_product", { name: view.name || view.id })}
+        aria-label={t("open_product", { name: name || productId })}
       >
-        <div className="relative flex aspect-[4/3] shrink-0 items-center justify-center overflow-hidden bg-gray-100">
-          <Badge
-            className="absolute left-1.5 top-1.5 z-10 max-w-[calc(100%-0.75rem)]"
-            variant="light"
-            color={pipeline.color}
-            size="sm"
-          >
-            {pipeline.label}
-          </Badge>
-          {view.imageUrl &&
+        <div className="relative aspect-[4/3] w-full shrink-0 overflow-hidden bg-gray-100">
+          {imageUrl &&
             <img
-              src={view.imageUrl}
-              alt={view.name || t("model")}
+              src={imageUrl}
+              alt={name || t("model")}
               loading="lazy"
-              className="h-full w-full object-contain object-center"
+              className="h-full w-full object-contain"
             />
           }
-          {!view.imageUrl &&
-            <div className="flex h-full w-full flex-col items-center justify-center gap-2 px-3 text-gray-400">
+          {!imageUrl &&
+            <div className="flex h-full w-full flex-col items-center justify-center gap-2 px-4 text-gray-400">
               {scrapePending &&
-                <>
-                  <Loader size="sm" color="brand" />
-                  <Text size="xs" c="dimmed" ta="center">{t("scraping")}</Text>
-                </>
+                <Loader color="brand" />
               }
-              {!scrapePending && scrapeFailed &&
+              {!scrapePending &&
+                <IconBox size={48} stroke={1.5} />
+              }
+              {scrapePending &&
+                <Text size="xs" c="dimmed" ta="center">
+                  {t("scraping_product_page")}
+                </Text>
+              }
+              {scrapeFailed &&
                 <>
-                  <Text size="xs" c="red" ta="center">{t("scrape_failed")}</Text>
-                  <Button
-                    size="compact-xs"
-                    variant="default"
-                    leftSection={<IconRefresh size={14} stroke={1.75} />}
+                  <Text size="xs" c="red" ta="center">
+                    {t("could_not_scrape_this_url")}
+                  </Text>
+                  <ActionIcon
+                    variant="subtle"
+                    color="gray"
+                    size="lg"
+                    radius="xl"
+                    aria-label={t("retry")}
                     onClick={(event) => {
                       event.stopPropagation()
                       void retryProduct(view)
                     }}
                   >
-                    {t("retry")}
-                  </Button>
+                    <IconRefresh size={18} stroke={1.75} />
+                  </ActionIcon>
                 </>
               }
-              {!scrapePending && !scrapeFailed &&
-                <IconBox size={48} stroke={1.5} />
-              }
             </div>
           }
         </div>
 
-        {hasMetaStrip &&
-          <div className="flex min-h-[2.25rem] items-center gap-2 border-b border-gray-100 px-3 py-2">
-            {hasColor &&
-              <div className="flex min-w-0 items-center gap-1.5">
-                <span
-                  className={cn(
-                    "h-5 w-5 shrink-0 rounded-full border border-gray-300",
-                    !colorHex && "bg-gray-200"
-                  )}
-                  style={colorHex ? { backgroundColor: colorHex } : undefined}
-                  title={view.color}
-                  aria-label={t("color", { color: view.color })}
-                />
-                <span className="truncate text-xs capitalize text-gray-600">{view.color}</span>
-              </div>
-            }
-            {hasColor && dimensionsDisplay &&
-              <span className="shrink-0 text-gray-300" aria-hidden="true">·</span>
-            }
-            {dimensionsDisplay &&
-              <span
-                className="truncate text-xs tabular-nums text-gray-500"
-                title={dimensionsDisplay}
+        <div className="flex min-w-0 flex-1 items-start gap-1 px-4 py-3">
+          <div className="min-w-0 flex-1">
+            <p className="m-0 line-clamp-2 min-h-[2.5rem] text-sm font-medium leading-5 text-gray-900">
+              {name || productId}
+            </p>
+            <p className={cn("m-0 mt-0.5 flex items-center gap-1.5 text-xs leading-4", statusClass)}>
+              <span className={cn("h-1.5 w-1.5 shrink-0 rounded-full", dotClass)} />
+              <span className="truncate">{pipelineLabel}</span>
+            </p>
+            {fromUrl && sourceUrl &&
+              <a
+                href={sourceUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-1.5 block truncate text-xs text-brand-600 hover:text-brand-700"
+                onClick={stop}
               >
-                {dimensionsDisplay}
-              </span>
+                {sourceUrl}
+              </a>
+            }
+            {sku &&
+              <p className="m-0 mt-1 text-xs tabular-nums text-gray-400">{sku}</p>
+            }
+            {priceDisplay &&
+              <p className="m-0 mt-2 text-sm font-semibold text-brand-600">{priceDisplay}</p>
+            }
+            {inSketchup && listCount > 0 &&
+              <p className="m-0 mt-1 text-xs font-medium text-green-800">
+                {t("in_list", { count: listCount })}
+              </p>
             }
           </div>
-        }
-
-        <div className="flex flex-1 flex-col p-3">
-          <h3 className="mb-1 line-clamp-3 text-sm font-semibold leading-snug text-gray-800">
-            {view.name || view.id}
-          </h3>
-          {fromUrl && view.sourceUrl &&
-            <a
-              href={view.sourceUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mb-1 truncate text-[0.6875rem] text-brand-500 hover:text-brand-600"
-              title={view.sourceUrl}
-              onClick={(event) => event.stopPropagation()}
-            >
-              {view.sourceUrl}
-            </a>
-          }
-          {view.sku &&
-            <p className="mb-1 text-xs tabular-nums text-gray-400">{view.sku}</p>
-          }
-          {hasTags &&
-            <div className="mb-2 flex flex-wrap items-center gap-1">
-              {visibleTags.map((tag) => (
-                <Badge
-                  key={tag}
-                  size="xs"
-                  variant="light"
-                  color="gray"
-                  title={tag}
-                  className="max-w-full capitalize"
-                >
-                  {tag}
-                </Badge>
-              ))}
-              {tagOverflow > 0 &&
-                <span
-                  className="text-[0.6875rem] font-medium text-gray-400"
-                  title={t("more_tags", { count: tagOverflow })}
-                >
-                  +{tagOverflow}
+          <div className="flex shrink-0 items-center" onClick={stop} onKeyDown={stop}>
+            {inSketchup &&
+              <Tooltip label={insertTitle}>
+                <span>
+                  <ActionIcon
+                    variant="subtle"
+                    color="brand"
+                    size="lg"
+                    radius="xl"
+                    aria-label={insertTitle}
+                    disabled={!canPrimary || importing}
+                    loading={importingPrimary}
+                    onClick={() => void addOrImportProduct(view, { inSketchup, glbSupported })}
+                  >
+                    <IconPlus size={18} stroke={1.75} />
+                  </ActionIcon>
                 </span>
-              }
-            </div>
-          }
-          {priceDisplay &&
-            <div className="mt-1 text-[0.9375rem] font-bold text-brand-500">{priceDisplay}</div>
-          }
-          {inSketchup && listCount > 0 &&
-            <div className="mt-auto pt-2 text-xs text-gray-500">
-              <span className="font-medium text-green-700">{t("in_list", { count: listCount })}</span>
-            </div>
-          }
+              </Tooltip>
+            }
+            {!inSketchup && glbUrl &&
+              <Tooltip label={t("download_glb_model")}>
+                <span>
+                  <ActionIcon
+                    variant="subtle"
+                    color="brand"
+                    size="lg"
+                    radius="xl"
+                    aria-label={t("download_glb_model")}
+                    disabled={importing}
+                    loading={importingGlb}
+                    onClick={() => void importProductGlb(view)}
+                  >
+                    <IconBox size={18} stroke={1.75} />
+                  </ActionIcon>
+                </span>
+              </Tooltip>
+            }
+            {!inSketchup && bundleUrl &&
+              <Tooltip label={t("download_collada_bundle")}>
+                <span>
+                  <ActionIcon
+                    variant="subtle"
+                    color="brand"
+                    size="lg"
+                    radius="xl"
+                    aria-label={t("download_collada_bundle")}
+                    disabled={importing}
+                    loading={importingDae}
+                    onClick={() => void importProductBundle(view)}
+                  >
+                    <IconFileZip size={18} stroke={1.75} />
+                  </ActionIcon>
+                </span>
+              </Tooltip>
+            }
+          </div>
         </div>
-      </div>
-
-      <ProductActions
-        view={view}
-        inSketchup={inSketchup}
-        glbSupported={glbSupported}
-      />
+      </article>
     </li>
   )
 }
-
-export default ModelCard

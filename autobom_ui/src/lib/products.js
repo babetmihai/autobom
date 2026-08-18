@@ -40,6 +40,59 @@ const COLOR_HEX = {
   beige: "#c8b496"
 }
 
+export const PRODUCT_COLORS = COLOR_HEX
+
+export const PRODUCT_TAGS = [
+  "chair",
+  "armchair",
+  "sofa",
+  "sectional",
+  "stool",
+  "bench",
+  "ottoman",
+  "table",
+  "desk",
+  "coffee table",
+  "dining table",
+  "side table",
+  "console",
+  "nightstand",
+  "cabinet",
+  "dresser",
+  "wardrobe",
+  "shelf",
+  "bookcase",
+  "sideboard",
+  "bed",
+  "headboard",
+  "mirror",
+  "lamp",
+  "pendant",
+  "chandelier",
+  "rug",
+  "planter",
+  "wood",
+  "metal",
+  "fabric",
+  "leather",
+  "velvet",
+  "linen",
+  "rattan",
+  "wicker",
+  "glass",
+  "marble",
+  "stone",
+  "ceramic",
+  "concrete",
+  "upholstered",
+  "modern",
+  "industrial",
+  "mid-century",
+  "minimalist",
+  "traditional",
+  "rustic"
+]
+
 const productService = createServices("products")
 
 const cacheBustedModelUrl = (url) => {
@@ -112,6 +165,112 @@ export const resolveProductView = (product) => {
     ...product,
     glbUrl: product.hasGlb ? product.glbUrl : null,
     bundleUrl: product.hasBundle ? product.bundleUrl : null
+  }
+}
+
+export const PRODUCT_MODEL_ASSET_KINDS = ["glb", "colada"]
+
+const ASSET_STEP = {
+  glb: "trellis",
+  colada: "colada"
+}
+
+export const getProductAssetView = (product, kind) => {
+  const view = resolveProductView(product)
+  if (!view) return null
+
+  const { glbUrl, bundleUrl, status } = view || {}
+  const urlByKind = {
+    glb: glbUrl,
+    colada: bundleUrl
+  }
+  const url = urlByKind[kind] || null
+  const stepStatus = (status || {})[ASSET_STEP[kind]]
+  const processing = stepStatus === STEP_STATUS.PROCESSING
+  const waiting = stepStatus === STEP_STATUS.PENDING
+  const failed = stepStatus === STEP_STATUS.FAILED
+  const available = Boolean(url)
+
+  let statusKey = "not_generated"
+  let statusColor = "gray"
+  if (available) {
+    statusKey = "ready"
+    statusColor = "green"
+  }
+  if (waiting && !available) {
+    statusKey = "waiting"
+    statusColor = "gray"
+  }
+  if (processing && !available) {
+    statusKey = "processing"
+    statusColor = "yellow"
+  }
+  if (failed && !available) {
+    statusKey = "failed"
+    statusColor = "red"
+  }
+
+  return {
+    ...view,
+    kind,
+    url,
+    available,
+    processing,
+    waiting,
+    failed,
+    statusKey,
+    statusColor
+  }
+}
+
+const analysisFieldStatus = (stepStatus, hasValue) => {
+  const processing = stepStatus === STEP_STATUS.PROCESSING
+  const waiting = stepStatus === STEP_STATUS.PENDING
+  const failed = stepStatus === STEP_STATUS.FAILED
+  const generating = processing || waiting
+  let statusKey = "not_generated"
+  if (hasValue) statusKey = "ready"
+  if (waiting) statusKey = "waiting"
+  if (processing) statusKey = "processing"
+  if (failed && !hasValue) statusKey = "failed"
+  return { hasValue, generating, failed: failed && !hasValue, statusKey }
+}
+
+export const getProductAnalysisView = (product) => {
+  const view = resolveProductView(product)
+  if (!view) return null
+
+  const { color, dimensions, tags, status } = view || {}
+  const { image, text } = status || {}
+  const activeTags = getActiveTags(tags)
+  const dimensionsDisplay = formatDimensions(dimensions)
+  const imageBusy = image === STEP_STATUS.PENDING || image === STEP_STATUS.PROCESSING
+  const textBusy = text === STEP_STATUS.PENDING || text === STEP_STATUS.PROCESSING
+
+  let tagsStep = STEP_STATUS.COMPLETED
+  if (image === STEP_STATUS.PROCESSING || text === STEP_STATUS.PROCESSING) {
+    tagsStep = STEP_STATUS.PROCESSING
+  } else if (imageBusy || textBusy) {
+    tagsStep = STEP_STATUS.PENDING
+  } else if (!activeTags.length && (image === STEP_STATUS.FAILED || text === STEP_STATUS.FAILED)) {
+    tagsStep = STEP_STATUS.FAILED
+  }
+
+  return {
+    color: {
+      value: color || null,
+      hex: colorToHex(color),
+      ...analysisFieldStatus(image, Boolean(color))
+    },
+    dimensions: {
+      display: dimensionsDisplay,
+      ...analysisFieldStatus(text, Boolean(dimensionsDisplay))
+    },
+    tags: {
+      value: activeTags,
+      ...analysisFieldStatus(tagsStep, activeTags.length > 0)
+    },
+    canRetry: image === STEP_STATUS.FAILED || text === STEP_STATUS.FAILED
   }
 }
 
@@ -250,12 +409,12 @@ export const isProductProcessing = (product) => {
 
 export const getProductPipelineView = (product) => {
   if (hasFailedSteps(product)) {
-    return { label: i18n.t("failed"), color: "red" }
+    return { label: i18n.t("failed"), color: "red", failed: true, generating: false }
   }
   if (isProductProcessing(product)) {
-    return { label: i18n.t("processing"), color: "yellow" }
+    return { label: i18n.t("processing"), color: "yellow", failed: false, generating: true }
   }
-  return { label: i18n.t("ready"), color: "green" }
+  return { label: i18n.t("ready"), color: "green", failed: false, generating: false }
 }
 
 export const retryProduct = async (product) => {
@@ -297,29 +456,29 @@ export const retryProduct = async (product) => {
 }
 
 export const reprocessProduct = async (product) => {
-  const { id } = product || {}
+  const { id, status, lockedStep } = product || {}
   const db = getFirestoreDb()
   if (!db) throw new Error(i18n.t("firebase_not_configured"))
   if (!id) throw new Error(i18n.t("product_id_required"))
 
-  const fromUrl = isUrlSource(product)
-  let nextStatus = { ...DEFAULT_PRODUCT_STATUS }
-  if (fromUrl) nextStatus = { ...URL_IMPORT_PRODUCT_STATUS }
+  const nextStatus = {
+    ...(status || {}),
+    image: STEP_STATUS.PENDING,
+    text: STEP_STATUS.PENDING
+  }
   const patch = {
-    status: nextStatus,
     updatedAt: Date.now(),
+    "status.image": STEP_STATUS.PENDING,
+    "status.text": STEP_STATUS.PENDING,
     tags: deleteField(),
     color: deleteField(),
-    dimensions: deleteField(),
-    embedding: deleteField(),
-    trellisRequestId: deleteField(),
-    hasGlb: deleteField(),
-    hasBundle: deleteField(),
-    modelGlbUrl: deleteField(),
-    modelBundleUrl: deleteField(),
-    lockedBy: deleteField(),
-    lockedAt: deleteField(),
-    lockedStep: deleteField()
+    dimensions: deleteField()
+  }
+  const analysisLocked = lockedStep === "image" || lockedStep === "text"
+  if (analysisLocked) {
+    patch.lockedBy = deleteField()
+    patch.lockedAt = deleteField()
+    patch.lockedStep = deleteField()
   }
 
   await updateDoc(getDocRef("products", id), patch)
@@ -333,21 +492,83 @@ export const reprocessProduct = async (product) => {
       updatedAt: patch.updatedAt,
       tags: null,
       color: null,
-      dimensions: null,
-      hasGlb: false,
-      hasBundle: false,
-      glbUrl: null,
-      bundleUrl: null,
-      hasModel: false,
-      download_url: null
+      dimensions: null
     }
-    delete next.embedding
-    delete next.trellisRequestId
+    if (analysisLocked) {
+      delete next.lockedBy
+      delete next.lockedAt
+      delete next.lockedStep
+    }
     return {
       ...products,
       [id]: toProductItem(next)
     }
   })
+}
+
+export const reprocessProductAsset = async (product, kind) => {
+  const { id, status } = product || {}
+  const db = getFirestoreDb()
+  if (!db) throw new Error(i18n.t("firebase_not_configured"))
+  if (!id) throw new Error(i18n.t("product_id_required"))
+
+  const loaderPath = `deletingAsset.${kind}.${id}`
+  const updatedAt = Date.now()
+  const nextStatus = { ...(status || {}) }
+  const patch = { updatedAt }
+
+  if (kind === "glb") {
+    patch.hasGlb = deleteField()
+    patch.modelGlbUrl = deleteField()
+    patch.trellisRequestId = deleteField()
+    patch.hasBundle = deleteField()
+    patch.modelBundleUrl = deleteField()
+    patch["status.trellis"] = STEP_STATUS.PENDING
+    patch["status.colada"] = STEP_STATUS.PENDING
+    nextStatus.trellis = STEP_STATUS.PENDING
+    nextStatus.colada = STEP_STATUS.PENDING
+  }
+  if (kind === "colada") {
+    patch.hasBundle = deleteField()
+    patch.modelBundleUrl = deleteField()
+    patch["status.colada"] = STEP_STATUS.PENDING
+    nextStatus.colada = STEP_STATUS.PENDING
+  }
+
+  try {
+    setLoader(loaderPath)
+    await updateDoc(getDocRef("products", id), patch)
+    void wakeTicker()
+    actions.update("products", (products = {}) => {
+      const current = products[id] || { id }
+      const next = {
+        ...current,
+        status: nextStatus,
+        updatedAt
+      }
+      if (kind === "glb") {
+        next.hasGlb = false
+        next.glbUrl = null
+        next.hasBundle = false
+        next.bundleUrl = null
+        delete next.trellisRequestId
+      }
+      if (kind === "colada") {
+        next.hasBundle = false
+        next.bundleUrl = null
+      }
+      next.hasModel = Boolean(next.glbUrl || next.bundleUrl)
+      next.download_url = next.glbUrl || next.bundleUrl || null
+      return {
+        ...products,
+        [id]: toProductItem(next)
+      }
+    })
+  } catch (error) {
+    showBanner("error", error.message)
+  } finally {
+    clearLoader(loaderPath)
+  }
 }
 
 export const productToFormValues = (product) => {
@@ -481,6 +702,68 @@ export const updateProduct = async (id, values, imageFile) => {
   })
   showBanner("success", i18n.t("product_saved"))
   return selectProduct(id)
+}
+
+const patchProductDoc = async (id, firestorePatch, storePatch) => {
+  const db = getFirestoreDb()
+  if (!db) throw new Error(i18n.t("firebase_not_configured"))
+  if (!id) throw new Error(i18n.t("product_id_required"))
+
+  const updatedAt = Date.now()
+  await updateDoc(getDocRef("products", id), { ...firestorePatch, updatedAt })
+  actions.update("products", (products = {}) => {
+    const current = products[id] || { id }
+    return {
+      ...products,
+      [id]: toProductItem({
+        ...current,
+        ...storePatch,
+        updatedAt
+      })
+    }
+  })
+  showBanner("success", i18n.t("product_saved"))
+  return selectProduct(id)
+}
+
+export const updateProductColor = async (id, color) => {
+  const value = (color || "").trim().toLowerCase()
+  const firestorePatch = {}
+  if (value) firestorePatch.color = value
+  else firestorePatch.color = deleteField()
+  return patchProductDoc(id, firestorePatch, { color: value || null })
+}
+
+export const updateProductDimensions = async (id, values) => {
+  const parseDim = (raw) => {
+    if (raw === "" || raw == null) return null
+    const n = Number(raw)
+    if (!Number.isFinite(n)) return null
+    return n
+  }
+  const width = parseDim(values.width)
+  const height = parseDim(values.height)
+  const depth = parseDim(values.depth)
+  const dimensions = _.omitBy({ width, height, depth }, _.isNil)
+  const firestorePatch = {}
+  if (_.isEmpty(dimensions)) firestorePatch.dimensions = deleteField()
+  else firestorePatch.dimensions = dimensions
+  let nextDimensions = dimensions
+  if (_.isEmpty(dimensions)) nextDimensions = null
+  return patchProductDoc(id, firestorePatch, { dimensions: nextDimensions })
+}
+
+export const updateProductTags = async (id, selectedTags) => {
+  const tags = {}
+  _.forEach(selectedTags || [], (tag) => {
+    tags[tag] = TRUE
+  })
+  const firestorePatch = {}
+  if (_.isEmpty(tags)) firestorePatch.tags = deleteField()
+  else firestorePatch.tags = tags
+  let nextTags = tags
+  if (_.isEmpty(tags)) nextTags = null
+  return patchProductDoc(id, firestorePatch, { tags: nextTags })
 }
 
 export const deleteProduct = async (id) => {

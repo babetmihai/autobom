@@ -5,8 +5,8 @@ import { useTranslation } from "react-i18next"
 export function AppHeader() {
   const { t } = useTranslation()
   const inSketchup = isInSketchup()
-  const description = (inSketchup && t("browse_catalog_models_sketchup"))
-    || t("browse_catalog_models")
+  let description = t("browse_catalog_models")
+  if (inSketchup) description = t("browse_catalog_models_sketchup")
 
   return (
     <PageHeader

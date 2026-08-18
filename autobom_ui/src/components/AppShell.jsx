@@ -1,4 +1,4 @@
-import { ActionIcon, Box, Button, Group, Stack, Text, Title, Tooltip } from "@mantine/core"
+import { ActionIcon, Box, Group, Stack, Text, Tooltip } from "@mantine/core"
 import { useSelector } from "react-redux"
 import { IconLayoutSidebarLeftCollapse, IconLayoutSidebarLeftExpand, IconLogout } from "@tabler/icons-react"
 import { useTranslation } from "react-i18next"
@@ -38,9 +38,9 @@ export function AppShell({ header, children }) {
           gap="xs"
         >
           {!collapsed &&
-            <Title order={2} size="h4" className="m-0 min-w-0 truncate text-gray-800">
+            <p className="m-0 min-w-0 truncate text-lg font-medium text-gray-800">
               Autobom
-            </Title>
+            </p>
           }
           <Tooltip
             label={collapsed ? t("expand_sidebar") : t("collapse_sidebar")}
@@ -50,7 +50,8 @@ export function AppShell({ header, children }) {
             <ActionIcon
               variant="subtle"
               color="gray"
-              size="md"
+              size="lg"
+              radius="xl"
               onClick={toggleSidebar}
               aria-label={collapsed ? t("expand_sidebar") : t("collapse_sidebar")}
               aria-expanded={!collapsed}
@@ -87,8 +88,10 @@ export function AppShell({ header, children }) {
               withArrow
             >
               <ActionIcon
-                variant="default"
+                variant="subtle"
+                color="gray"
                 size="lg"
+                radius="xl"
                 loading={signingOut}
                 onClick={() => void signOut()}
                 aria-label={t("sign_out")}
@@ -98,14 +101,17 @@ export function AppShell({ header, children }) {
             </Tooltip>
           }
           {!collapsed &&
-            <Button
-              variant="default"
-              size="compact-sm"
+            <ActionIcon
+              variant="subtle"
+              color="gray"
+              size="lg"
+              radius="xl"
               loading={signingOut}
               onClick={() => void signOut()}
+              aria-label={t("sign_out")}
             >
-              {t("sign_out")}
-            </Button>
+              <IconLogout size={18} stroke={1.75} />
+            </ActionIcon>
           }
         </Stack>
       </Box>
@@ -129,24 +135,15 @@ export function AppShell({ header, children }) {
 
 export function PageHeader({ title, description }) {
   return (
-    <Box className="px-4 py-4 sm:px-6">
-      <Group
-        justify="space-between"
-        align="flex-start"
-        gap="sm"
-        wrap="nowrap"
-      >
-        <Box className="min-w-0 flex-1">
-          <Title order={1} size="h3" className="m-0 text-gray-800">
-            {title}
-          </Title>
-          {description &&
-            <Text size="sm" c="dimmed" className="mt-1">
-              {description}
-            </Text>
-          }
-        </Box>
-      </Group>
-    </Box>
+    <div className="px-4 py-3 sm:px-6">
+      <h1 className="m-0 truncate text-lg font-medium text-gray-800">
+        {title}
+      </h1>
+      {description &&
+        <p className="m-0 mt-1 text-sm leading-5 text-gray-500">
+          {description}
+        </p>
+      }
+    </div>
   )
 }

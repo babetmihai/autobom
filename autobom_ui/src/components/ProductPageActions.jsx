@@ -1,22 +1,18 @@
-import { Button, Group } from "@mantine/core"
-import { IconDownload, IconPencil, IconRefresh, IconTrash } from "@tabler/icons-react"
+import { ActionIcon, Tooltip } from "@mantine/core"
+import { IconPencil, IconPlus, IconRefresh, IconTrash } from "@tabler/icons-react"
 import { useTranslation } from "react-i18next"
 import {
   addOrImportProduct,
-  importProductBundle,
-  importProductGlb,
   reprocessProduct
 } from "../lib/products.js"
 import { useLoader } from "../lib/loaders.js"
 import { showProductModal } from "./ProductModal.jsx"
 import { showBanner } from "../lib/banner/index.js"
-import { cn } from "../lib/index.js"
 
 export default function ProductPageActions({
   view,
   inSketchup = true,
   glbSupported = true,
-  className,
   isDeleting = false,
   onDelete
 }) {
@@ -35,6 +31,11 @@ export default function ProductPageActions({
   const importing = importingGlb || importingDae
   const busy = importing || isDeleting
 
+  let insertTitle = t("no_importable_model")
+  if (useGlbImport) insertTitle = t("insert_glb_model")
+  if (useBundleImport) insertTitle = t("insert_collada_model")
+  if (glbBlocked) insertTitle = t("glb_requires_sketchup_2025")
+
   const onReprocess = async () => {
     if (!window.confirm(t("reprocess_this_product"))) return
     try {
@@ -44,86 +45,72 @@ export default function ProductPageActions({
     }
   }
 
-  const primaryLabel = (() => {
-    if (useGlbImport) return t("insert_glb_model")
-    if (useBundleImport) return t("insert_collada_model")
-    if (glbBlocked) return t("glb_requires_sketchup_2025_short")
-    return t("no_importable_model")
-  })()
-
-  const primaryTitle = (() => {
-    if (useGlbImport) return t("insert_glb_model")
-    if (useBundleImport) return t("insert_collada_model")
-    if (glbBlocked) return t("glb_requires_sketchup_2025")
-    return t("no_importable_model")
-  })()
-
   return (
-    <Group gap="xs" className={cn("flex-wrap", className)}>
+    <div className="flex shrink-0 items-center">
       {inSketchup &&
-        <Button
-          color="brand"
-          title={primaryTitle}
-          disabled={!canPrimary || busy}
-          loading={importingPrimary}
-          onClick={() => void addOrImportProduct(view, { inSketchup, glbSupported })}
-        >
-          {primaryLabel}
-        </Button>
+        <Tooltip label={insertTitle}>
+          <span>
+            <ActionIcon
+              variant="subtle"
+              color="brand"
+              size="lg"
+              radius="xl"
+              aria-label={insertTitle}
+              disabled={!canPrimary || busy}
+              loading={importingPrimary}
+              onClick={() => void addOrImportProduct(view, { inSketchup, glbSupported })}
+            >
+              <IconPlus size={18} stroke={1.75} />
+            </ActionIcon>
+          </span>
+        </Tooltip>
       }
-      {!inSketchup && glbUrl &&
-        <Button
-          color="brand"
-          title={t("download_glb_model")}
-          leftSection={<IconDownload size={16} stroke={1.75} />}
-          disabled={busy}
-          loading={importingGlb}
-          onClick={() => importProductGlb(view)}
-        >
-          {t("glb")}
-        </Button>
-      }
-      {!inSketchup && bundleUrl &&
-        <Button
-          variant="default"
-          title={t("download_collada_bundle")}
-          leftSection={<IconDownload size={16} stroke={1.75} />}
-          disabled={busy}
-          loading={importingDae}
-          onClick={() => importProductBundle(view)}
-        >
-          {t("colada")}
-        </Button>
-      }
-      <Button
-        variant="default"
-        title={t("edit")}
-        leftSection={<IconPencil size={16} stroke={1.75} />}
-        disabled={busy}
-        onClick={() => showProductModal({ productId })}
-      >
-        {t("edit")}
-      </Button>
-      <Button
-        variant="default"
-        title={t("reprocess")}
-        leftSection={<IconRefresh size={16} stroke={1.75} />}
-        disabled={busy}
-        onClick={() => void onReprocess()}
-      >
-        {t("reprocess")}
-      </Button>
-      <Button
-        variant="outline"
-        color="red"
-        title={t("delete")}
-        leftSection={<IconTrash size={16} stroke={1.75} />}
-        disabled={busy}
-        loading={isDeleting}
-        onClick={onDelete}
-      >
-        {t("delete")}
-      </Button>
-    </Group>
+      <Tooltip label={t("edit")}>
+        <span>
+          <ActionIcon
+            variant="subtle"
+            color="gray"
+            size="lg"
+            radius="xl"
+            aria-label={t("edit")}
+            disabled={busy}
+            onClick={() => showProductModal({ productId })}
+          >
+            <IconPencil size={18} stroke={1.75} />
+          </ActionIcon>
+        </span>
+      </Tooltip>
+      <Tooltip label={t("reprocess")}>
+        <span>
+          <ActionIcon
+            variant="subtle"
+            color="gray"
+            size="lg"
+            radius="xl"
+            aria-label={t("reprocess")}
+            disabled={busy}
+            onClick={() => void onReprocess()}
+          >
+            <IconRefresh size={18} stroke={1.75} />
+          </ActionIcon>
+        </span>
+      </Tooltip>
+      <Tooltip label={t("delete")}>
+        <span>
+          <ActionIcon
+            variant="subtle"
+            color="red"
+            size="lg"
+            radius="xl"
+            aria-label={t("delete")}
+            disabled={busy}
+            loading={isDeleting}
+            onClick={onDelete}
+          >
+            <IconTrash size={18} stroke={1.75} />
+          </ActionIcon>
+        </span>
+      </Tooltip>
+    </div>
   )
 }

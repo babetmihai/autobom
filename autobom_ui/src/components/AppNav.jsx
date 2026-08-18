@@ -53,6 +53,7 @@ export function AppNav({ collapsed = false }) {
               variant={isActive(path) ? "light" : "subtle"}
               color={isActive(path) ? "brand" : "gray"}
               size="lg"
+              radius="xl"
               aria-label={t(labelKey)}
               activeClassName=""
             >
@@ -72,6 +73,7 @@ export function AppNav({ collapsed = false }) {
               variant={listActive ? "light" : "subtle"}
               color={listActive ? "brand" : "gray"}
               size="lg"
+              radius="xl"
               aria-label={listAria}
               className="relative"
               activeClassName=""
