@@ -23,7 +23,8 @@ export type TSceneStatus = {
 }
 
 export const DEFAULT_PRODUCT_STATUS: TProductStatus = {
-  scrape: STEP_STATUS.COMPLETED
+  scrape: STEP_STATUS.COMPLETED,
+  analysis: STEP_STATUS.PENDING
 }
 
 export const URL_IMPORT_PRODUCT_STATUS: TProductStatus = {

@@ -29,7 +29,7 @@ service cloud.firestore {
       allow get: if canGetOwnedOrMissing(version, "products", productId)
       allow list: if isOwner()
       allow create: if isCreatingAsOwner()
-      allow update: if isKeepingOwner()
+      allow update: if isKeepingOwner() && request.resource.data.imageUrl == resource.data.imageUrl
     }
 
     match /versions/{version}/scenes/{sceneId} {

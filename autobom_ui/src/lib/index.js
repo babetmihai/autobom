@@ -69,7 +69,8 @@ export const PRODUCT_SOURCE = {
 }
 
 export const DEFAULT_PRODUCT_STATUS = {
-  scrape: STEP_STATUS.COMPLETED
+  scrape: STEP_STATUS.COMPLETED,
+  analysis: STEP_STATUS.PENDING
 }
 
 export const URL_IMPORT_PRODUCT_STATUS = {

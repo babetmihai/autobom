@@ -5,7 +5,8 @@ import {
   addOrImportProduct,
   getProductAnalysisView,
   isScrapePending,
-  reprocessProduct
+  reprocessProduct,
+  retryProduct
 } from "../lib/products.js"
 import { useLoader } from "../lib/loaders.js"
 import { showProductModal } from "./ProductModal.jsx"
@@ -23,7 +24,7 @@ export default function ProductPageActions({
   const importingGlb = useLoader(productId ? `importingModel.glb.${productId}` : "")
   const importingDae = useLoader(productId ? `importingModel.dae.${productId}` : "")
   const analysis = getProductAnalysisView(view)
-  const { generating: analysisGenerating, canReanalyze } = analysis || {}
+  const { generating: analysisGenerating, canReanalyze, canRetry } = analysis || {}
   const scrapePending = isScrapePending(view)
 
   if (!productId) return null
@@ -43,11 +44,17 @@ export default function ProductPageActions({
   if (glbBlocked) insertTitle = t("glb_requires_sketchup_2025")
 
   let analysisTitle = t("analyze")
+  if (canRetry) analysisTitle = t("retry")
   if (canReanalyze) analysisTitle = t("reanalyze")
+  const analysisRefresh = canReanalyze || canRetry
 
   const onAnalyze = async () => {
     if (canReanalyze && !window.confirm(t("reanalyze_this_product"))) return
     try {
+      if (canRetry) {
+        await retryProduct(view)
+        return
+      }
       await reprocessProduct(view)
     } catch (error) {
       showBanner("error", error.message)
@@ -100,10 +107,10 @@ export default function ProductPageActions({
             disabled={busy || analysisBusy}
             onClick={() => void onAnalyze()}
           >
-            {canReanalyze &&
+            {analysisRefresh &&
               <IconRefresh size={18} stroke={1.75} />
             }
-            {!canReanalyze &&
+            {!analysisRefresh &&
               <IconPlayerPlay size={18} stroke={1.75} />
             }
           </ActionIcon>

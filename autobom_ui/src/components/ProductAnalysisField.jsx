@@ -24,7 +24,7 @@ export default function ProductAnalysisField({
     generating,
     failed
   })
-  const showStatus = !hasValue || generating || failed
+  const showStatus = Boolean(statusKey) && (!hasValue || generating || failed)
 
   return (
     <article

@@ -1,6 +1,6 @@
 import { Badge } from "@mantine/core"
 import { IconPalette, IconRuler2, IconTags } from "@tabler/icons-react"
-import { getProductAnalysisView, retryProduct } from "../lib/products.js"
+import { getProductAnalysisView } from "../lib/products.js"
 import ProductAnalysisField from "./ProductAnalysisField.jsx"
 import ProductGroup from "./ProductGroup.jsx"
 import {
@@ -14,33 +14,27 @@ import { useTranslation } from "react-i18next"
 export default function ProductAnalysis({ product }) {
   const { t } = useTranslation()
   const analysis = getProductAnalysisView(product)
-  const { color, dimensions, tags } = analysis || {}
+  const { color, dimensions, tags, failed: analysisFailed } = analysis || {}
   const {
     value: colorName,
     hex: colorHex,
     hasValue: hasColor,
     generating: colorGenerating,
-    failed: colorFailed,
     statusKey: colorStatus
   } = color || {}
   const {
     display: dimensionsDisplay,
     hasValue: hasDimensions,
     generating: dimensionsGenerating,
-    failed: dimensionsFailed,
     statusKey: dimensionsStatus
   } = dimensions || {}
   const {
     value: tagList,
     hasValue: hasTags,
     generating: tagsGenerating,
-    failed: tagsFailed,
     statusKey: tagsStatus
   } = tags || {}
 
-  const onRetry = () => {
-    void retryProduct(product)
-  }
   const { id: productId } = product || {}
 
   return (
@@ -50,9 +44,8 @@ export default function ProductAnalysis({ product }) {
         label={t("color_label")}
         icon={IconPalette}
         hasValue={hasColor}
-        generating={colorGenerating}
-        failed={colorFailed}
-        statusKey={colorStatus}
+        generating={!analysisFailed && colorGenerating}
+        statusKey={!analysisFailed && colorStatus}
         avatar={hasColor && !colorGenerating &&
           <span
             className={cn("block h-full w-full", !colorHex && "bg-gray-200")}
@@ -61,8 +54,6 @@ export default function ProductAnalysis({ product }) {
             aria-label={t("color", { color: colorName })}
           />
         }
-        retryLabel={t("retry")}
-        onRetry={onRetry}
         editLabel={t("edit_color")}
         onEdit={() => showProductColorModal({ productId })}
       >
@@ -73,11 +64,8 @@ export default function ProductAnalysis({ product }) {
         label={t("dimensions")}
         icon={IconRuler2}
         hasValue={hasDimensions}
-        generating={dimensionsGenerating}
-        failed={dimensionsFailed}
-        statusKey={dimensionsStatus}
-        retryLabel={t("retry")}
-        onRetry={onRetry}
+        generating={!analysisFailed && dimensionsGenerating}
+        statusKey={!analysisFailed && dimensionsStatus}
         editLabel={t("edit_dimensions")}
         onEdit={() => showProductDimensionsModal({ productId })}
       >
@@ -88,11 +76,8 @@ export default function ProductAnalysis({ product }) {
         label={t("tags")}
         icon={IconTags}
         hasValue={hasTags}
-        generating={tagsGenerating}
-        failed={tagsFailed}
-        statusKey={tagsStatus}
-        retryLabel={t("retry")}
-        onRetry={onRetry}
+        generating={!analysisFailed && tagsGenerating}
+        statusKey={!analysisFailed && tagsStatus}
         editLabel={t("edit_tags")}
         onEdit={() => showProductTagsModal({ productId })}
       >

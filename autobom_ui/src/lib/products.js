@@ -243,14 +243,12 @@ const resolveAnalysisStep = (status) => {
 const analysisFieldStatus = (stepStatus, hasValue) => {
   const processing = stepStatus === STEP_STATUS.PROCESSING
   const waiting = stepStatus === STEP_STATUS.PENDING
-  const failed = stepStatus === STEP_STATUS.FAILED
   const generating = processing || waiting
   let statusKey = "not_generated"
   if (hasValue) statusKey = "ready"
   if (waiting) statusKey = "waiting"
   if (processing) statusKey = "processing"
-  if (failed && !hasValue) statusKey = "failed"
-  return { hasValue, generating, failed: failed && !hasValue, statusKey }
+  return { hasValue, generating, statusKey }
 }
 
 export const getProductAnalysisView = (product) => {
@@ -280,6 +278,7 @@ export const getProductAnalysisView = (product) => {
       ...analysisFieldStatus(analysisStep, activeTags.length > 0)
     },
     generating,
+    failed,
     canRetry: failed,
     canReanalyze: completed
   }
@@ -408,11 +407,19 @@ export const isScrapePending = (product) => {
   return scrape === STEP_STATUS.PENDING || scrape === STEP_STATUS.PROCESSING
 }
 
-export const hasFailedSteps = (product) => {
+const PIPELINE_FAILED_LABEL = {
+  scrape: "scrape_failed",
+  analysis: "analysis_failed",
+  trellis: "failed",
+  colada: "failed"
+}
+
+const resolveFailedPipelineStep = (product) => {
   const { status } = product || {}
-  if (_.some(PIPELINE_STEPS, (step) => (status || {})[step] === STEP_STATUS.FAILED)) return true
-  if ((status || {}).analysis) return false
-  return _.some(["image", "text", "embedding"], (step) => (status || {})[step] === STEP_STATUS.FAILED)
+  const failedStep = _.find(PIPELINE_STEPS, (step) => (status || {})[step] === STEP_STATUS.FAILED)
+  if (failedStep) return failedStep
+  if (resolveAnalysisStep(status) === STEP_STATUS.FAILED) return "analysis"
+  return null
 }
 
 export const isProductProcessing = (product) => {
@@ -424,8 +431,14 @@ export const isProductProcessing = (product) => {
 }
 
 export const getProductPipelineView = (product) => {
-  if (hasFailedSteps(product)) {
-    return { label: i18n.t("failed"), color: "red", failed: true, generating: false }
+  const failedStep = resolveFailedPipelineStep(product)
+  if (failedStep) {
+    return {
+      label: i18n.t(PIPELINE_FAILED_LABEL[failedStep] || "failed"),
+      color: "red",
+      failed: true,
+      generating: false
+    }
   }
   if (isProductProcessing(product)) {
     return { label: i18n.t("processing"), color: "yellow", failed: false, generating: true }
@@ -669,7 +682,7 @@ export const createProduct = async (values, imageFile) => {
   return selectProduct(id)
 }
 
-export const updateProduct = async (id, values, imageFile) => {
+export const updateProduct = async (id, values) => {
   const db = getFirestoreDb()
   if (!db) throw new Error(i18n.t("firebase_not_configured"))
   if (!id) throw new Error(i18n.t("product_id_required"))
@@ -681,21 +694,6 @@ export const updateProduct = async (id, values, imageFile) => {
     ...payload,
     updatedAt: Date.now()
   }
-  if (imageFile) {
-    patch.imageUrl = await uploadProductImage(id, imageFile)
-    patch.tags = deleteField()
-    patch.color = deleteField()
-    patch.dimensions = deleteField()
-    patch.embedding = deleteField()
-    patch["status.analysis"] = deleteField()
-    patch["status.trellis"] = deleteField()
-    patch["status.colada"] = deleteField()
-    patch.trellisRequestId = deleteField()
-    patch.hasGlb = deleteField()
-    patch.hasBundle = deleteField()
-    patch.modelGlbUrl = deleteField()
-    patch.modelBundleUrl = deleteField()
-  }
   await updateDoc(getDocRef("products", id), patch)
 
   actions.update("products", (products = {}) => {
@@ -705,24 +703,6 @@ export const updateProduct = async (id, values, imageFile) => {
       ...payload,
       price: parsePrice(payload.price),
       updatedAt: patch.updatedAt
-    }
-    if (imageFile) {
-      next.imageUrl = patch.imageUrl
-      next.status = { ...(current.status || {}) }
-      delete next.status.analysis
-      delete next.status.trellis
-      delete next.status.colada
-      next.tags = null
-      next.color = null
-      next.dimensions = null
-      next.hasGlb = false
-      next.hasBundle = false
-      next.glbUrl = null
-      next.bundleUrl = null
-      next.hasModel = false
-      next.download_url = null
-      delete next.embedding
-      delete next.trellisRequestId
     }
     return {
       ...products,

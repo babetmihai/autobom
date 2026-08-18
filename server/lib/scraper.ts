@@ -82,6 +82,7 @@ export const scrapeProduct = async (product: {
     productUrl: resolvedUrl || sourceUrl,
     sourceUrl,
     imageUrl,
-    "status.scrape": STEP_STATUS.COMPLETED
+    "status.scrape": STEP_STATUS.COMPLETED,
+    "status.analysis": STEP_STATUS.PENDING
   }))
 }

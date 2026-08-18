@@ -36,7 +36,6 @@ function ProductModal({
   const [imageFile, setImageFile] = React.useState(null)
   const [imagePreview, setImagePreview] = React.useState(null)
   const imageInputRef = React.useRef(null)
-  const { imageUrl: existingImageUrl } = product || {}
 
   React.useEffect(() => {
     if (!imageFile) {
@@ -51,14 +50,14 @@ function ProductModal({
   const formik = useFormik({
     enableReinitialize: true,
     validateOnBlur: false,
-    initialValues: { ...productToFormValues(product), image: existingImageUrl || "" },
+    initialValues: { ...productToFormValues(product), image: "" },
     validate: (values) => {
       const errors = {}
       if (!(values.name || "").trim()) errors.name = t("name_is_required")
       if (values.productUrl && !/^https?:\/\//i.test(values.productUrl.trim())) {
         errors.productUrl = t("enter_valid_product_url")
       }
-      if (!(values.image || "").trim()) errors.image = t("image_is_required")
+      if (!isEdit && !(values.image || "").trim()) errors.image = t("image_is_required")
       return errors
     },
     onSubmit: async (values, helpers) => {
@@ -66,7 +65,7 @@ function ProductModal({
         helpers.setSubmitting(true)
         let item
         if (isEdit) {
-          item = await updateProduct(productId, values, imageFile)
+          item = await updateProduct(productId, values)
         } else {
           item = await createProduct(values, imageFile)
         }
@@ -82,8 +81,7 @@ function ProductModal({
   const { values, errors, touched, isSubmitting } = formik
   const busy = isSubmitting
   const name = (isEdit && t("edit_product")) || t("new_product")
-  const previewSrc = imagePreview || existingImageUrl
-  const canReplace = Boolean(previewSrc)
+  const canReplace = Boolean(imagePreview)
   const imageError = touched.image && errors.image
   const imageButtonStyle = {}
   if (imageError) imageButtonStyle.borderColor = "var(--mantine-color-error)"
@@ -156,59 +154,61 @@ function ProductModal({
               onBlur={formik.handleBlur}
             />
           </SimpleGrid>
-          <Input.Wrapper label={t("image")} error={imageError}>
-            <Group align="flex-end" gap="sm" wrap="nowrap">
-              <button
-                type="button"
-                className="box-border h-[7.5rem] w-[7.5rem] shrink-0 cursor-pointer appearance-none overflow-hidden rounded-xl border border-gray-200 bg-gray-100 p-0"
-                style={imageButtonStyle}
-                disabled={busy}
-                onClick={openImagePicker}
-                aria-label={(canReplace && t("replace_image")) || t("upload_image")}
-              >
-                {previewSrc &&
-                  <img src={previewSrc} alt="" className="h-full w-full object-cover" />
-                }
-                {!previewSrc &&
-                  <span className="flex h-full w-full items-center justify-center text-gray-400">
-                    <IconPhoto size={48} stroke={1.5} />
-                  </span>
-                }
-              </button>
-              <Stack gap={4}>
-                <Button
+          {!isEdit &&
+            <Input.Wrapper label={t("image")} error={imageError}>
+              <Group align="flex-end" gap="sm" wrap="nowrap">
+                <button
                   type="button"
-                  variant="default"
+                  className="box-border h-[7.5rem] w-[7.5rem] shrink-0 cursor-pointer appearance-none overflow-hidden rounded-xl border border-gray-200 bg-gray-100 p-0"
+                  style={imageButtonStyle}
                   disabled={busy}
-                  leftSection={<IconUpload size={16} stroke={1.75} />}
                   onClick={openImagePicker}
+                  aria-label={(canReplace && t("replace_image")) || t("upload_image")}
                 >
-                  {canReplace && t("replace_image")}
-                  {!canReplace && t("upload_image")}
-                </Button>
-                {imageFile &&
-                  <Text size="xs" c="dimmed">{imageFile.name}</Text>
-                }
-                {!imageFile &&
-                  <Text size="xs" c="dimmed">{t("jpeg_png_or_webp")}</Text>
-                }
-              </Stack>
-            </Group>
-            <input
-              ref={imageInputRef}
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              className="hidden"
-              disabled={busy}
-              onChange={(event) => {
-                const file = _.first(event.target.files)
-                event.target.value = ""
-                if (!file || !_.includes(["image/jpeg", "image/png", "image/webp"], file.type)) return
-                setImageFile(file)
-                formik.setFieldValue("image", file.name)
-              }}
-            />
-          </Input.Wrapper>
+                  {imagePreview &&
+                    <img src={imagePreview} alt="" className="h-full w-full object-cover" />
+                  }
+                  {!imagePreview &&
+                    <span className="flex h-full w-full items-center justify-center text-gray-400">
+                      <IconPhoto size={48} stroke={1.5} />
+                    </span>
+                  }
+                </button>
+                <Stack gap={4}>
+                  <Button
+                    type="button"
+                    variant="default"
+                    disabled={busy}
+                    leftSection={<IconUpload size={16} stroke={1.75} />}
+                    onClick={openImagePicker}
+                  >
+                    {canReplace && t("replace_image")}
+                    {!canReplace && t("upload_image")}
+                  </Button>
+                  {imageFile &&
+                    <Text size="xs" c="dimmed">{imageFile.name}</Text>
+                  }
+                  {!imageFile &&
+                    <Text size="xs" c="dimmed">{t("jpeg_png_or_webp")}</Text>
+                  }
+                </Stack>
+              </Group>
+              <input
+                ref={imageInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                className="hidden"
+                disabled={busy}
+                onChange={(event) => {
+                  const file = _.first(event.target.files)
+                  event.target.value = ""
+                  if (!file || !_.includes(["image/jpeg", "image/png", "image/webp"], file.type)) return
+                  setImageFile(file)
+                  formik.setFieldValue("image", file.name)
+                }}
+              />
+            </Input.Wrapper>
+          }
           <TextInput
             label={t("product_url")}
             name="productUrl"
