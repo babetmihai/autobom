@@ -112,6 +112,7 @@ export default function SceneAnalyzerPage() {
       await deleteScene(sceneId)
       history.push("/scene-analyzer")
     } catch (error) {
+      console.error(error)
       showBanner("error", error.message || t("could_not_delete_scene"))
     }
   }

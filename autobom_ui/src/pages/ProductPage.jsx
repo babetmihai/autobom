@@ -95,6 +95,7 @@ export default function ProductPage() {
       await deleteProduct(productId)
       history.push(from)
     } catch (error) {
+      console.error(error)
       showBanner("error", error.message || t("could_not_delete_product"))
       setIsDeleting(false)
     }

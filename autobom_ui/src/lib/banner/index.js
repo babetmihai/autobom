@@ -9,6 +9,7 @@ const COLOR_BY_TYPE = {
 }
 
 export const showBanner = (type, message) => {
+  if (type === "error") console.error(message)
   const typeKey = typeof type === "string" && type.length ? type : "info"
   notifications.show({
     color: COLOR_BY_TYPE[typeKey] || "blue",

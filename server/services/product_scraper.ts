@@ -41,7 +41,7 @@ const run = async () => {
     console.log("----> Product scrape completed:", id)
     return { status: null }
   } catch (error) {
-    console.log(error.message)
+    console.error(error)
     if (productId) {
       await failStep("products", productId, STEP)
     }

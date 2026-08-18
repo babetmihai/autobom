@@ -149,7 +149,8 @@ const mapProduct = (data) => {
     hasModel: Boolean(glbUrl || bundleUrl),
     color: data.color || null,
     dimensions: data.dimensions || null,
-    tags: data.tags || null
+    tags: data.tags || null,
+    createdAt: data.createdAt || 0
   }
 }
 
@@ -291,6 +292,7 @@ const buildListQuery = ({ search, hasGlb, hasBundle, lastId, createdBy }) => {
   if (hasGlb) query.hasGlb = "TRUE"
   if (hasBundle) query.hasBundle = "TRUE"
   if (lastId) query.lastId = lastId
+  if (!trimmedSearch) query.orderByField = "createdAt"
   return query
 }
 
@@ -308,6 +310,10 @@ const updateProductsMeta = (rawProducts) => {
 }
 
 export const selectProducts = () => actions.get("products", EMPTY_OBJECT)
+
+export const selectCatalogProducts = () => {
+  return _.orderBy(Object.values(selectProducts()), ["createdAt"], ["desc"])
+}
 
 export const selectProduct = (id) => selectProducts()[id] || null
 
@@ -335,6 +341,7 @@ export const fetchProduct = async (id) => {
     actions.update("products", (products = {}) => ({ ...products, [id]: item }))
     return item
   } catch (error) {
+    console.error(error)
     showBanner("error", error.message || i18n.t("could_not_load_product"))
     return null
   } finally {
@@ -370,6 +377,7 @@ export const fetchProducts = async ({
     updateProductsMeta(rawProducts)
     sketchup.getDocumentUsage()
   } catch (error) {
+    console.error(error)
     showBanner("error", error.message)
   } finally {
     clearLoader("loadProducts")
@@ -604,6 +612,7 @@ export const reprocessProductAsset = async (product, kind) => {
       }
     })
   } catch (error) {
+    console.error(error)
     showBanner("error", error.message)
   } finally {
     clearLoader(loaderPath)
@@ -835,6 +844,7 @@ export const importProductFromUrl = async (url) => {
     showBanner("success", i18n.t("product_added_scraping"))
     return id
   } catch (error) {
+    console.error(error)
     showBanner("error", error.message || i18n.t("import_failed"))
     return null
   } finally {
@@ -900,6 +910,7 @@ export const loadMoreProducts = async ({
     actions.update("products", (products = {}) => ({ ...products, ..._.keyBy(list, "id") }))
     updateProductsMeta(rawProducts)
   } catch (error) {
+    console.error(error)
     showBanner("error", error.message)
   } finally {
     clearLoader("loadMoreProducts")
@@ -921,6 +932,7 @@ export const importProductGlb = async (product) => {
     }
     sketchup.importModel({ id, model_url: cacheBustedModelUrl(glbUrl), source: "glb" })
   } catch (error) {
+    console.error(error)
     showBanner("error", error.message)
     clearLoader(loaderPath)
   }
@@ -941,6 +953,7 @@ export const importProductBundle = async (product) => {
     }
     sketchup.importModel({ id, model_url: cacheBustedModelUrl(bundleUrl), source: "collada" })
   } catch (error) {
+    console.error(error)
     showBanner("error", error.message)
     clearLoader(loaderPath)
   }

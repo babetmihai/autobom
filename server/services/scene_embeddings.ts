@@ -128,7 +128,7 @@ const run = async () => {
     console.log("----> Crop matching completed:", id, cropId)
     return finishQueue(id, latestCrops, nextMatches)
   } catch (error) {
-    console.log(error.message)
+    console.error(error)
     if (sceneId) {
       const latest = await sceneService.get(sceneId)
       const crops = (latest && latest.crops) || []

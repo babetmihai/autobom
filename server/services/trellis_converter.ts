@@ -79,7 +79,7 @@ const run = async () => {
     console.log("----> Trellis model conversion started for product:", id)
     return { status: STEP_STATUS.PROCESSING, id }
   } catch (error) {
-    console.log(error.message)
+    console.error(error)
     if (productId) {
       await failStep("products", productId, STEP)
     }

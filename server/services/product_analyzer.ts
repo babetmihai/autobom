@@ -91,7 +91,7 @@ const run = async () => {
     console.log("----> Product analysis completed for product:", id)
     return { status: null }
   } catch (error) {
-    console.log(error.message)
+    console.error(error)
     if (productId) {
       await failStep("products", productId, STEP)
     }

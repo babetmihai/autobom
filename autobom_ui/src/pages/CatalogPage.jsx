@@ -9,7 +9,7 @@ import { useLoader } from "../lib/loaders.js"
 import {
   fetchProducts,
   loadMoreProducts,
-  selectProducts,
+  selectCatalogProducts,
   selectProductsMeta,
   useImportListener,
   usePendingUrlImportListeners
@@ -40,7 +40,7 @@ export default function CatalogPage() {
 
   const [sketchupEnv, setSketchupEnv] = React.useState(null)
 
-  const products = useSelector(() => selectProducts())
+  const list = useSelector(() => selectCatalogProducts())
   const { hasMore } = useSelector(() => selectProductsMeta())
   const listQuantities = useSelector(() => selectListQuantities())
 
@@ -66,7 +66,6 @@ export default function CatalogPage() {
   useTagListener()
   useSketchupEnvListener(setSketchupEnv)
 
-  const list = Object.values(products)
   const hasFilters = Boolean(searchQuery.trim() || hasGlb || hasBundle)
 
   const loading = useLoader("loadProducts")

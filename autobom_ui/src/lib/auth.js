@@ -60,6 +60,7 @@ export const signInWithEmail = async (email, password) => {
   try {
     await signInWithEmailAndPassword(auth, email.trim(), password)
   } catch (error) {
+    console.error(error)
     showBanner("error", error.message || i18n.t("sign_in_failed"))
   } finally {
     clearLoader("auth.signIn")
@@ -77,6 +78,7 @@ export const signUpWithEmail = async (email, password) => {
   try {
     await createUserWithEmailAndPassword(auth, email.trim(), password)
   } catch (error) {
+    console.error(error)
     showBanner("error", error.message || i18n.t("sign_up_failed"))
   } finally {
     clearLoader("auth.signUp")
@@ -91,6 +93,7 @@ export const signOut = async () => {
   try {
     await firebaseSignOut(auth)
   } catch (error) {
+    console.error(error)
     showBanner("error", error.message || i18n.t("sign_out_failed"))
   } finally {
     clearLoader("auth.signOut")

@@ -38,6 +38,7 @@ function ColorModal({ productId, onClose = hideModal }) {
         await updateProductColor(productId, values.color)
         hideModal()
       } catch (error) {
+        console.error(error)
         showBanner("error", error.message || t("could_not_save_product"))
         helpers.setSubmitting(false)
       }
@@ -132,6 +133,7 @@ function DimensionsModal({ productId, onClose = hideModal }) {
         await updateProductDimensions(productId, values)
         hideModal()
       } catch (error) {
+        console.error(error)
         showBanner("error", error.message || t("could_not_save_product"))
         helpers.setSubmitting(false)
       }
@@ -221,6 +223,7 @@ function TagsModal({ productId, onClose = hideModal }) {
         await updateProductTags(productId, values.tags)
         hideModal()
       } catch (error) {
+        console.error(error)
         showBanner("error", error.message || t("could_not_save_product"))
         helpers.setSubmitting(false)
       }

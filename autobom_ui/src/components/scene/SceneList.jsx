@@ -39,6 +39,7 @@ export default function SceneList() {
   const onDelete = (id) => {
     if (!window.confirm(t("delete_this_scene"))) return
     void deleteScene(id).catch((error) => {
+      console.error(error)
       showBanner("error", error.message || t("could_not_delete_scene"))
     })
   }

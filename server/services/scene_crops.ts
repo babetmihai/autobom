@@ -77,7 +77,7 @@ const run = async () => {
     console.log("----> Scene crop detection completed for scene:", id)
     return { status: null }
   } catch (error) {
-    console.log(error.message)
+    console.error(error)
     if (sceneId) {
       await failStep("scenes", sceneId, STEP)
     }

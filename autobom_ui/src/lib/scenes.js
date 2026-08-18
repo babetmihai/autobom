@@ -112,6 +112,7 @@ export const fetchScenes = async ({ reset = true } = {}) => {
     }
     updateScenesListMeta(rawScenes)
   } catch (error) {
+    console.error(error)
     showBanner("error", error.message)
   } finally {
     clearLoader("scenes.list")
@@ -138,6 +139,7 @@ export const loadMoreScenes = async () => {
     sceneAppActions.update("list", (list = EMPTY_ARRAY) => [...list, ...rawScenes])
     updateScenesListMeta(rawScenes)
   } catch (error) {
+    console.error(error)
     showBanner("error", error.message)
   } finally {
     clearLoader("scenes.loadMore")
@@ -237,6 +239,7 @@ export const uploadScene = async (file) => {
     })
     return id
   } catch (error) {
+    console.error(error)
     showBanner("error", error.message || i18n.t("upload_failed"))
   } finally {
     clearLoader("scenes.upload")
@@ -290,6 +293,7 @@ export const updateSceneName = async (sceneId, name) => {
       list.map((scene) => scene.id === sceneId ? { ...scene, name: trimmed, updatedAt } : scene)
     )
   } catch (error) {
+    console.error(error)
     showBanner("error", error.message || i18n.t("could_not_rename_scene"))
     throw error
   } finally {
@@ -384,6 +388,7 @@ export const requestSceneStep = async (scene, kind) => {
       })
     )
   } catch (error) {
+    console.error(error)
     showBanner("error", error.message || i18n.t("could_not_retry_analysis"))
   } finally {
     clearLoader(loaderPath)
@@ -434,6 +439,7 @@ export const requestCropMatch = async (scene, cropId) => {
       })
     )
   } catch (error) {
+    console.error(error)
     showBanner("error", error.message || i18n.t("could_not_retry_analysis"))
   } finally {
     clearLoader(loaderPath)

@@ -57,6 +57,7 @@ export default function ProductPageActions({
       }
       await reprocessProduct(view)
     } catch (error) {
+      console.error(error)
       showBanner("error", error.message)
     }
   }

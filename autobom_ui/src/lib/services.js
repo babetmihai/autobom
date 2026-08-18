@@ -61,6 +61,7 @@ export const createServices = (path) => {
         ids,
         lastId,
         pageSize = PAGE_SIZE,
+        orderByField,
         ...rest
       } = queryParams
 
@@ -99,7 +100,11 @@ export const createServices = (path) => {
             }
           }
           constraints.push(where("_active", "==", TRUE))
-          constraints.push(orderBy(documentId(), "desc"))
+          if (orderByField) {
+            constraints.push(orderBy(orderByField, "desc"))
+          } else {
+            constraints.push(orderBy(documentId(), "desc"))
+          }
           if (lastId) {
             const lastDoc = await getDoc(getDocRef(path, lastId))
             if (lastDoc.exists()) {

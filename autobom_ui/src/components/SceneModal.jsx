@@ -26,6 +26,7 @@ function SceneModal({ sceneId, onClose = hideModal }) {
         await updateSceneName(sceneId, values.name.trim())
         hideModal()
       } catch (error) {
+        console.error(error)
         helpers.setSubmitting(false)
       }
     }
