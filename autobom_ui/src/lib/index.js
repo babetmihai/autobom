@@ -60,7 +60,9 @@ export const STEP_STATUS = {
   FAILED: "FAILED"
 }
 
-export const DEFAULT_SCENE_STATUS = {}
+export const DEFAULT_SCENE_STATUS = {
+  detection: STEP_STATUS.PENDING
+}
 
 export const PRODUCT_SOURCE = {
   URL: "URL"

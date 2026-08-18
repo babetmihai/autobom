@@ -30,7 +30,9 @@ export const URL_IMPORT_PRODUCT_STATUS: TProductStatus = {
   scrape: STEP_STATUS.PENDING
 }
 
-export const DEFAULT_SCENE_STATUS: TSceneStatus = {}
+export const DEFAULT_SCENE_STATUS: TSceneStatus = {
+  detection: STEP_STATUS.PENDING
+}
 
 export const isScrapePending = (status: { scrape?: TStepStatus } | null | undefined) => {
   const { scrape } = status || {}

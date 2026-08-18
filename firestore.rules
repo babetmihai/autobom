@@ -18,14 +18,23 @@ service cloud.firestore {
       return isOwner() && request.resource.data.createdBy == resource.data.createdBy
     }
 
+    function canGetOwnedOrMissing(version, col, docId) {
+      return isSignedIn() && (
+        !exists(/databases/$(database)/documents/versions/$(version)/$(col)/$(docId))
+        || resource.data.createdBy == request.auth.uid
+      )
+    }
+
     match /versions/{version}/products/{productId} {
-      allow read: if isOwner()
+      allow get: if canGetOwnedOrMissing(version, "products", productId)
+      allow list: if isOwner()
       allow create: if isCreatingAsOwner()
       allow update: if isKeepingOwner()
     }
 
     match /versions/{version}/scenes/{sceneId} {
-      allow read: if isOwner()
+      allow get: if canGetOwnedOrMissing(version, "scenes", sceneId)
+      allow list: if isOwner()
       allow create: if isCreatingAsOwner()
       allow update: if isKeepingOwner()
     }

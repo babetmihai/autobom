@@ -89,7 +89,7 @@ Pipeline progress is stored on each document as `status.*` with values `PENDING`
 
 | Field | Worker | Prerequisite |
 | --- | --- | --- |
-| `detection` | `scene_crops` | Manual; scene image `url` |
+| `detection` | `scene_crops` | Automatic on upload; scene image `url` |
 | `matching` | `scene_embeddings` | Manual per crop; `status.detection` COMPLETED |
 
 Enable workers with `SERVICES_ENABLED` (comma-separated). Empty = start none.
@@ -111,8 +111,8 @@ Manual / non-URL products skip scrape (`status.scrape` already COMPLETED). Analy
 
 ### 2. Scene match
 
-1. User opens Scene Analyzer → uploads a room image. Detection and matching are not queued.
-2. User starts **detection** → **scene_crops** detects furniture → crop JPGs + bboxes in Storage → `crops[]`.
+1. User opens Scene Analyzer → uploads a room image. Detection is queued; matching is not.
+2. **scene_crops** detects furniture → crop JPGs + bboxes in Storage → `crops[]`.
 3. User starts **matching** on a crop → **scene_embeddings** CLIP that crop → nearest catalog products (`findSimilarProducts`) → `matches[]` for that crop.
 4. UI shows crops and matches; user can add products to cart / import to SketchUp.
 

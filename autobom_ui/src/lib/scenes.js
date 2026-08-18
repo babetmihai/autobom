@@ -4,7 +4,7 @@ import { onSnapshot, setDoc, updateDoc, deleteField } from "firebase/firestore"
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage"
 import { actions } from "./store/index.js"
 import { createServices, getDocRef } from "./services.js"
-import { getFirebaseStorage, wakeTicker } from "./firebase.js"
+import { getFirebaseStorage, getFirestoreDb, wakeTicker } from "./firebase.js"
 import { setLoader, clearLoader } from "./loaders.js"
 import { DEFAULT_SCENE_STATUS, EMPTY_ARRAY, FALSE, STEP_STATUS, TRUE } from "./index.js"
 import { showBanner } from "./banner/index.js"
@@ -57,6 +57,11 @@ export const selectActiveScene = () => {
   const sceneId = selectActiveSceneId()
   if (!sceneId) return null
   return sceneActions.get(sceneId, null)
+}
+
+export const selectScene = (id) => {
+  if (!id) return null
+  return sceneActions.get(id, null)
 }
 
 export const selectSceneMatchProductsById = () => sceneMatchProductActions.get()
@@ -173,7 +178,12 @@ export const uploadScene = async (file) => {
       .join("")
     const id = contentHash
 
-    const existing = await sceneService.get(id)
+    let existing = null
+    try {
+      existing = await sceneService.get(id)
+    } catch (error) {
+      if (error.code !== "permission-denied") throw error
+    }
     if (existing) {
       sceneAppActions.set("activeSceneId", id)
       sceneActions.set(id, existing)
@@ -212,6 +222,7 @@ export const uploadScene = async (file) => {
       createdAt: now,
       updatedAt: now
     })
+    void wakeTicker()
 
     sceneAppActions.set("activeSceneId", id)
     sceneActions.set(id, {
@@ -238,8 +249,15 @@ export const useSceneListener = (sceneId) => {
 
     const docRef = getDocRef("scenes", sceneId)
     return onSnapshot(docRef, (snap) => {
-      if (!snap.exists()) return
+      if (!snap.exists()) {
+        sceneActions.unset(sceneId)
+        return
+      }
       const data = snap.data()
+      if (data._active !== TRUE) {
+        sceneActions.unset(sceneId)
+        return
+      }
       const scene = _.omit(data, ["_search", "_active"])
       sceneActions.set(sceneId, scene)
       if (scene.matches?.length) {
@@ -273,8 +291,31 @@ export const updateSceneName = async (sceneId, name) => {
     )
   } catch (error) {
     showBanner("error", error.message || i18n.t("could_not_rename_scene"))
+    throw error
   } finally {
     clearLoader(`scenes.rename.${sceneId}`)
+  }
+}
+
+export const deleteScene = async (id) => {
+  const db = getFirestoreDb()
+  if (!db) throw new Error(i18n.t("firebase_not_configured"))
+  if (!id) throw new Error(i18n.t("scene_id_required"))
+
+  setLoader(`scenes.delete.${id}`)
+  try {
+    await updateDoc(getDocRef("scenes", id), {
+      _active: deleteField(),
+      updatedAt: Date.now()
+    })
+    sceneActions.unset(id)
+    sceneAppActions.update("list", (list = EMPTY_ARRAY) =>
+      list.filter((scene) => scene.id !== id)
+    )
+    if (selectActiveSceneId() === id) setActiveSceneId("")
+    showBanner("success", i18n.t("scene_deleted"))
+  } finally {
+    clearLoader(`scenes.delete.${id}`)
   }
 }
 

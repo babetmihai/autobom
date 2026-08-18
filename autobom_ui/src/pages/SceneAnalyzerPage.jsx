@@ -1,17 +1,19 @@
 import React from "react"
-import { Link, useParams } from "react-router-dom"
+import { Link, useHistory, useParams } from "react-router-dom"
 import { useSelector } from "react-redux"
 import { ActionIcon, Anchor, Tooltip } from "@mantine/core"
-import { IconChevronLeft, IconPlayerPlay, IconRefresh } from "@tabler/icons-react"
+import { IconChevronLeft, IconPencil, IconPlayerPlay, IconRefresh, IconTrash } from "@tabler/icons-react"
 import { SceneAnalyzerHeader } from "../components/SceneAnalyzerHeader"
 import { AppShell } from "../components/AppShell.jsx"
 import SceneUpload from "../components/scene/SceneUpload.jsx"
 import SceneList from "../components/scene/SceneList.jsx"
-import SceneNameField from "../components/scene/SceneNameField.jsx"
 import SceneViewer from "../components/scene/SceneViewer.jsx"
 import CropCard from "../components/scene/CropCard.jsx"
+import { showSceneModal } from "../components/SceneModal.jsx"
 import {
+  deleteScene,
   requestSceneStep,
+  resolveSceneName,
   selectActiveScene,
   selectActiveSceneId,
   selectCropsWithMatches,
@@ -25,6 +27,7 @@ import {
 import { useImportListener } from "../lib/products.js"
 import { useTagListener } from "../lib/tags.js"
 import { useLoader } from "../lib/loaders.js"
+import { showBanner } from "../lib/banner/index.js"
 import { cn, materialCardClass, materialStatusTone, STEP_STATUS } from "../lib/index.js"
 import { glbNativeImport, isInSketchup, useSketchupEnvListener } from "../lib/sketchup.js"
 import { useTranslation } from "react-i18next"
@@ -32,6 +35,7 @@ import { useTranslation } from "react-i18next"
 
 export default function SceneAnalyzerPage() {
   const { t } = useTranslation()
+  const history = useHistory()
   const { sceneId: routeSceneId } = useParams()
 
   React.useEffect(() => {
@@ -82,6 +86,7 @@ export default function SceneAnalyzerPage() {
   const detectionFailed = detection === STEP_STATUS.FAILED
   const hasCrops = cropsWithMatches.length > 0
   const detecting = useLoader(sceneId ? `scenes.step.detection.${sceneId}` : "")
+  const deleting = useLoader(sceneId ? `scenes.delete.${sceneId}` : "")
   const { statusClass, dotClass } = materialStatusTone({
     ready: Boolean(scene) && !processing && !failed,
     generating: Boolean(processing),
@@ -99,6 +104,16 @@ export default function SceneAnalyzerPage() {
   const onDetect = () => {
     if (hasCrops && !window.confirm(t("reprocess_this_detection"))) return
     void requestSceneStep(scene, "detection")
+  }
+
+  const onDelete = async () => {
+    if (!window.confirm(t("delete_this_scene"))) return
+    try {
+      await deleteScene(sceneId)
+      history.push("/scene-analyzer")
+    } catch (error) {
+      showBanner("error", error.message || t("could_not_delete_scene"))
+    }
   }
 
   return (
@@ -132,15 +147,32 @@ export default function SceneAnalyzerPage() {
             "mb-4"
           )}
         >
-          <div className="flex items-start gap-1 px-4 py-3">
+          <div className="flex items-start gap-1 py-3 pl-6 pr-4">
             <div className="min-w-0 flex-1">
-              <SceneNameField scene={scene} />
+              <p className="m-0 truncate text-sm font-medium text-gray-900">
+                {resolveSceneName(scene)}
+              </p>
               <p className={cn("m-0 mt-0.5 flex items-center gap-1.5 text-xs leading-4", statusClass)}>
                 <span className={cn("h-1.5 w-1.5 shrink-0 rounded-full", dotClass)} />
                 <span className="truncate">{sceneStatusLabel(status)}</span>
               </p>
             </div>
             <div className="flex shrink-0 items-center">
+              <Tooltip label={t("edit")}>
+                <span>
+                  <ActionIcon
+                    variant="subtle"
+                    color="gray"
+                    size="lg"
+                    radius="xl"
+                    aria-label={t("edit")}
+                    disabled={deleting}
+                    onClick={() => showSceneModal({ sceneId })}
+                  >
+                    <IconPencil size={18} stroke={1.75} />
+                  </ActionIcon>
+                </span>
+              </Tooltip>
               {!processing &&
                 <Tooltip label={detectTitle}>
                   <span>
@@ -150,7 +182,7 @@ export default function SceneAnalyzerPage() {
                       size="lg"
                       radius="xl"
                       aria-label={detectTitle}
-                      disabled={!canDetect}
+                      disabled={!canDetect || deleting}
                       loading={detecting}
                       onClick={onDetect}
                     >
@@ -164,6 +196,22 @@ export default function SceneAnalyzerPage() {
                   </span>
                 </Tooltip>
               }
+              <Tooltip label={t("delete")}>
+                <span>
+                  <ActionIcon
+                    variant="subtle"
+                    color="red"
+                    size="lg"
+                    radius="xl"
+                    aria-label={t("delete")}
+                    disabled={deleting}
+                    loading={deleting}
+                    onClick={() => void onDelete()}
+                  >
+                    <IconTrash size={18} stroke={1.75} />
+                  </ActionIcon>
+                </span>
+              </Tooltip>
             </div>
           </div>
         </article>
