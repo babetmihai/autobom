@@ -4,11 +4,9 @@ import { STEP_STATUS } from "./lib/status"
 import { MACHINE_ID } from "./lib/machine"
 import { listenWake } from "./lib/wake"
 import productScraperService from "./services/product_scraper"
+import productAnalyzerService from "./services/product_analyzer"
 import trellisConverterService from "./services/trellis_converter"
 import coladaConverterService from "./services/colada_converter"
-import imageAnalyzerService from "./services/image_analyzer"
-import textAnalyzerService from "./services/text_analyzer"
-import embeddingIndexService from "./services/embedding_index"
 import sceneCropsService from "./services/scene_crops"
 import sceneEmbeddingsService from "./services/scene_embeddings"
 
@@ -23,9 +21,7 @@ type TService = {
 
 const SERVICE_BY_NAME: Record<string, TService> = {
   product_scraper: productScraperService,
-  image_analyzer: imageAnalyzerService,
-  text_analyzer: textAnalyzerService,
-  embedding_index: embeddingIndexService,
+  product_analyzer: productAnalyzerService,
   trellis_converter: trellisConverterService,
   colada_converter: coladaConverterService,
   scene_crops: sceneCropsService,

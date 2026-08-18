@@ -7,7 +7,7 @@ const PAGE_SIZE = 100
 
 const [collection, stepKey, beforeStatus, nextStatus] = process.argv.slice(2)
 
-const STEP_KEYS = ["image", "text", "embedding", "trellis", "colada", "detection", "matching"]
+const STEP_KEYS = ["analysis", "image", "text", "embedding", "trellis", "colada", "detection", "matching"]
 const COLLECTIONS = {
   products: productService
 }

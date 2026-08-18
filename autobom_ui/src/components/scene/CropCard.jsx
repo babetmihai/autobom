@@ -1,9 +1,9 @@
 import _ from "lodash"
-import { cn, materialCardClass } from "../../lib/index.js"
-import {
-  sceneMatchingComplete,
-  sceneMatchingProcessing
-} from "../../lib/scenes.js"
+import { ActionIcon, Tooltip } from "@mantine/core"
+import { IconPlayerPlay, IconRefresh } from "@tabler/icons-react"
+import { cn, materialCardClass, STEP_STATUS } from "../../lib/index.js"
+import { cropMatchingStatus, requestCropMatch } from "../../lib/scenes.js"
+import { useLoader } from "../../lib/loaders.js"
 import MatchRow from "./MatchRow.jsx"
 import { useTranslation } from "react-i18next"
 
@@ -15,7 +15,7 @@ export default function CropCard({
   selected,
   onSelect,
   cardRef,
-  sceneStatus,
+  scene,
   sceneId,
   inSketchup = true,
   glbSupported = true
@@ -28,8 +28,26 @@ export default function CropCard({
   const confidencePercent = confidence != null
     ? Math.round(confidence * 100)
     : null
-  const matchingComplete = sceneMatchingComplete(sceneStatus)
-  const matchingProcessing = sceneMatchingProcessing(sceneStatus)
+  const stepStatus = cropMatchingStatus(crop)
+  const waiting = stepStatus === STEP_STATUS.PENDING
+  const processing = stepStatus === STEP_STATUS.PROCESSING
+  const failed = stepStatus === STEP_STATUS.FAILED
+  const completed = stepStatus === STEP_STATUS.COMPLETED
+  const generating = waiting || processing
+  const hasMatches = sorted.length > 0
+  const matching = useLoader(sceneId && id ? `scenes.crop.${sceneId}.${id}` : "")
+
+  let matchTitle = t("match_catalog")
+  if (failed) matchTitle = t("retry")
+  if (completed || hasMatches) matchTitle = t("reprocess")
+
+  const showRefresh = failed || completed || hasMatches
+
+  const onMatch = (event) => {
+    event.stopPropagation()
+    if ((completed || hasMatches) && !window.confirm(t("reprocess_this_matching"))) return
+    void requestCropMatch(scene, id)
+  }
 
   return (
     <article
@@ -52,15 +70,38 @@ export default function CropCard({
           }
         </div>
         <div className="min-w-0 flex-1">
-          <div className="px-4 py-3">
-            <p className="m-0 truncate text-sm font-medium capitalize text-gray-900">
-              {label || t("furniture")}
-            </p>
-            {confidencePercent != null &&
-              <p className="m-0 mt-0.5 text-xs text-gray-500">
-                {t("detection_percent", { percent: confidencePercent })}
+          <div className="flex items-start gap-1 px-4 py-3">
+            <div className="min-w-0 flex-1">
+              <p className="m-0 truncate text-sm font-medium capitalize text-gray-900">
+                {label || t("furniture")}
               </p>
-            }
+              {confidencePercent != null &&
+                <p className="m-0 mt-0.5 text-xs text-gray-500">
+                  {t("detection_percent", { percent: confidencePercent })}
+                </p>
+              }
+            </div>
+            <Tooltip label={matchTitle}>
+              <span onClick={(event) => event.stopPropagation()}>
+                <ActionIcon
+                  variant="subtle"
+                  color="gray"
+                  size="lg"
+                  radius="xl"
+                  aria-label={matchTitle}
+                  disabled={generating}
+                  loading={matching || generating}
+                  onClick={onMatch}
+                >
+                  {showRefresh &&
+                    <IconRefresh size={18} stroke={1.75} />
+                  }
+                  {!showRefresh &&
+                    <IconPlayerPlay size={18} stroke={1.75} />
+                  }
+                </ActionIcon>
+              </span>
+            </Tooltip>
           </div>
 
           {sorted.length > 0 &&
@@ -78,11 +119,11 @@ export default function CropCard({
             </ul>
           }
 
-          {sorted.length === 0 && matchingComplete &&
+          {sorted.length === 0 && completed &&
             <p className="m-0 px-4 pb-3 text-xs text-gray-500">{t("no_catalog_matches_found")}</p>
           }
 
-          {sorted.length === 0 && matchingProcessing &&
+          {sorted.length === 0 && generating &&
             <p className="m-0 px-4 pb-3 text-xs text-gray-500">{t("finding_matches")}</p>
           }
         </div>

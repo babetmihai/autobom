@@ -12,7 +12,7 @@ Autobom turns product listing URLs and room photos into a searchable furniture c
 
 | Capability | What it does |
 | --- | --- |
-| Catalog | Authenticated users import products from store URLs; workers scrape, tag, embed, and generate GLBs |
+| Catalog | Authenticated users import products from store URLs; scrape runs automatically, then analysis / GLB / COLADA are started from the product page |
 | Scene analyzer | Upload a room image; detect furniture crops; match each crop to catalog products |
 | Cart / BOM | Collect matched or catalog products for import |
 | SketchUp plugin | HtmlDialog UI + native `definitions.import` of Storage GLB (or Colada zip / SKP) |
@@ -80,19 +80,17 @@ Pipeline progress is stored on each document as `status.*` with values `PENDING`
 
 | Field | Worker | Prerequisite |
 | --- | --- | --- |
-| `scrape` | `product_scraper` | URL import (`source: URL`) |
-| `image` | `image_analyzer` | Scrape not pending; needs `imageUrl` |
-| `text` | `text_analyzer` | Scrape not pending |
-| `embedding` | `embedding_index` | `status.image` COMPLETED |
-| `trellis` | `trellis_converter` | `status.image` + `status.text` COMPLETED |
-| `colada` | `colada_converter` | `status.trellis` COMPLETED + `hasGlb` |
+| `scrape` | `product_scraper` | URL import (`source: URL`) — automatic |
+| `analysis` | `product_analyzer` | Manual; scrape not pending; image + text + embedding in one run |
+| `trellis` | `trellis_converter` | Manual; needs `imageUrl` |
+| `colada` | `colada_converter` | Manual; `status.trellis` COMPLETED + `hasGlb` |
 
 **Scene** (`status`):
 
 | Field | Worker | Prerequisite |
 | --- | --- | --- |
-| `detection` | `scene_crops` | Scene created with image `url` |
-| `matching` | `scene_embeddings` | `status.detection` COMPLETED |
+| `detection` | `scene_crops` | Manual; scene image `url` |
+| `matching` | `scene_embeddings` | Manual per crop; `status.detection` COMPLETED |
 
 Enable workers with `SERVICES_ENABLED` (comma-separated). Empty = start none.
 
@@ -103,21 +101,19 @@ Enable workers with `SERVICES_ENABLED` (comma-separated). Empty = start none.
 ### 1. Catalog product (URL import)
 
 1. User signs in → Catalog → paste a product page URL.
-2. UI creates a product with `source: URL`, `sourceUrl`, and `status` all `PENDING` (including `scrape`).
+2. UI creates a product with `source: URL`, `sourceUrl`, and `status.scrape` PENDING. Analysis, GLB, and COLADA are not queued.
 3. **product_scraper** picks it up → calls text analyzer `POST /extract-product` → title, price, primary image uploaded to Storage → `status.scrape` COMPLETED.
-4. **image_analyzer** → tags + color on the product image.
-5. **text_analyzer** → LLM tags / dimensions from listing text.
-6. **embedding_index** → CLIP vector on the product image (for scene matching).
-7. **trellis_converter** → image → GLB → Storage `models/{productId}.glb` → sets `modelGlbUrl`, `hasGlb`.
-8. **colada_converter** (optional) → GLB → COLLADA zip → `modelBundleUrl`, `hasBundle`.
+4. User starts **analysis** on the product page → `product_analyzer` runs image tags/color, LLM tags/dimensions, and CLIP embedding together.
+5. User starts **GLB** → **trellis_converter** → image → GLB → Storage `models/{productId}.glb` → sets `modelGlbUrl`, `hasGlb`.
+6. User starts **COLADA** → **colada_converter** → GLB → COLLADA zip → `modelBundleUrl`, `hasBundle`.
 
-Manual / non-URL products can skip scrape (`status.scrape` already COMPLETED) and enter at image/text analysis.
+Manual / non-URL products skip scrape (`status.scrape` already COMPLETED). Analysis, GLB, and COLADA still wait for an explicit start.
 
 ### 2. Scene match
 
-1. User opens Scene Analyzer → uploads a room image → scene doc with `status.detection` PENDING.
-2. **scene_crops** → scene analyzer detects furniture → crop JPGs + bboxes in Storage → `crops[]`.
-3. **scene_embeddings** → CLIP each crop → nearest catalog products (`findSimilarProducts`) → `matches[]`.
+1. User opens Scene Analyzer → uploads a room image. Detection and matching are not queued.
+2. User starts **detection** → **scene_crops** detects furniture → crop JPGs + bboxes in Storage → `crops[]`.
+3. User starts **matching** on a crop → **scene_embeddings** CLIP that crop → nearest catalog products (`findSimilarProducts`) → `matches[]` for that crop.
 4. UI shows crops and matches; user can add products to cart / import to SketchUp.
 
 ### 3. SketchUp import
@@ -223,9 +219,7 @@ This starts the Docker Compose stacks required by those workers, then `npm run s
 | `SERVICES_ENABLED` value | Docker stack(s) |
 | --- | --- |
 | `product_scraper` | `text_analyzer` |
-| `text_analyzer` | `text_analyzer` |
-| `image_analyzer` | `image_analyzer` |
-| `embedding_index` | `embedding_analyzer` |
+| `product_analyzer` | `image_analyzer`, `text_analyzer`, `embedding_analyzer` |
 | `scene_embeddings` | `embedding_analyzer` |
 | `scene_crops` | `scene_analyzer` |
 | `trellis_converter` | `trellis` |
@@ -234,7 +228,7 @@ This starts the Docker Compose stacks required by those workers, then `npm run s
 Example full local pipeline:
 
 ```
-SERVICES_ENABLED=product_scraper,image_analyzer,text_analyzer,embedding_index,trellis_converter,colada_converter,scene_crops,scene_embeddings
+SERVICES_ENABLED=product_scraper,product_analyzer,trellis_converter,colada_converter,scene_crops,scene_embeddings
 ```
 
 Or start stacks / cron separately:
@@ -340,7 +334,7 @@ Root `.env` (see `.env.example`):
 3. `npm run install:all`.
 4. Enable Email/Password Auth; deploy Firestore/Storage rules.
 5. `npm run dev` → create a user → confirm catalog loads.
-6. Set a small `SERVICES_ENABLED` (e.g. `product_scraper,image_analyzer,text_analyzer`) and `npm run server:up`.
-7. Import a product URL; watch server logs and Firestore `status.*`.
-8. When ready for GLBs: enable `trellis_converter`, ensure GPU Docker works, keep `TRELLIS_LOW_VRAM=true`.
+6. Set a small `SERVICES_ENABLED` (e.g. `product_scraper,product_analyzer`) and `npm run server:up`.
+7. Import a product URL; scrape runs automatically. Start analysis from the product page and watch Firestore `status.analysis`.
+8. When ready for GLBs: enable `trellis_converter`, ensure GPU Docker works, keep `TRELLIS_LOW_VRAM=true`, then start GLB from the product page.
 9. For SketchUp: set `AUTOBOM_HTML_DIALOG_URL`, `npm run package:extension`, install `.rbz`.

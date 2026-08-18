@@ -1,6 +1,6 @@
 import React from "react"
 import _ from "lodash"
-import { onSnapshot, setDoc, updateDoc } from "firebase/firestore"
+import { onSnapshot, setDoc, updateDoc, deleteField } from "firebase/firestore"
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage"
 import { actions } from "./store/index.js"
 import { createServices, getDocRef } from "./services.js"
@@ -46,10 +46,7 @@ const buildSceneName = (file, createdAt) => nameFromFile(file) || defaultSceneNa
 
 export const normalizeSceneStatus = (value) => {
   const { detection, matching } = value || {}
-  return {
-    detection: detection || STEP_STATUS.PENDING,
-    matching: matching || STEP_STATUS.PENDING
-  }
+  return { detection, matching }
 }
 
 export const selectActiveSceneId = () => sceneAppActions.get("activeSceneId", "")
@@ -215,7 +212,6 @@ export const uploadScene = async (file) => {
       createdAt: now,
       updatedAt: now
     })
-    void wakeTicker()
 
     sceneAppActions.set("activeSceneId", id)
     sceneActions.set(id, {
@@ -283,81 +279,137 @@ export const updateSceneName = async (sceneId, name) => {
 }
 
 export const sceneStatusLabel = (status) => {
-  const { detection, matching } = normalizeSceneStatus(status)
+  const { detection, matching } = status || {}
 
-  if (detection === STEP_STATUS.FAILED || matching === STEP_STATUS.FAILED) {
-    return i18n.t("analysis_failed")
-  }
-  if (matching === STEP_STATUS.COMPLETED) return i18n.t("analysis_complete")
-  if (matching === STEP_STATUS.PROCESSING) return i18n.t("matching_catalog_items")
+  if (detection === STEP_STATUS.FAILED) return i18n.t("analysis_failed")
   if (detection === STEP_STATUS.PROCESSING) return i18n.t("detecting_furniture")
   if (detection === STEP_STATUS.PENDING) return i18n.t("queued_for_analysis")
-  return i18n.t("waiting")
+  if (matching === STEP_STATUS.PROCESSING) return i18n.t("matching_catalog_items")
+  if (matching === STEP_STATUS.PENDING) return i18n.t("matching_catalog_items")
+  if (detection === STEP_STATUS.COMPLETED) return i18n.t("detection_complete")
+  return i18n.t("not_generated")
 }
 
 export const sceneIsQueued = (status) => {
-  const { detection, matching } = normalizeSceneStatus(status)
-  return detection === STEP_STATUS.PENDING && matching === STEP_STATUS.PENDING
+  const { detection, matching } = status || {}
+  return detection === STEP_STATUS.PENDING || matching === STEP_STATUS.PENDING
 }
 
 export const sceneIsProcessing = (status) => {
-  const { detection, matching } = normalizeSceneStatus(status)
-  return [detection, matching].some((step) => step === STEP_STATUS.PROCESSING)
+  const { detection, matching } = status || {}
+  return [detection, matching].some((step) => {
+    return step === STEP_STATUS.PENDING || step === STEP_STATUS.PROCESSING
+  })
 }
 
 export const sceneIsFailed = (status) => {
-  const { detection, matching } = normalizeSceneStatus(status)
-  return detection === STEP_STATUS.FAILED || matching === STEP_STATUS.FAILED
+  const { detection } = status || {}
+  return detection === STEP_STATUS.FAILED
 }
 
-export const retryScene = async (scene) => {
-  const { id, status } = scene || {}
+export const requestSceneStep = async (scene, kind) => {
+  const { id } = scene || {}
   if (!id) return
+  if (kind !== "detection") return
 
-  const { detection, matching } = normalizeSceneStatus(status)
-  const patch = { updatedAt: Date.now() }
-  const nextStatus = { detection, matching }
-
-  if (detection === STEP_STATUS.FAILED) {
-    patch["status.detection"] = STEP_STATUS.PENDING
-    nextStatus.detection = STEP_STATUS.PENDING
+  const updatedAt = Date.now()
+  const nextStatus = { detection: STEP_STATUS.PENDING }
+  const patch = {
+    updatedAt,
+    "status.detection": STEP_STATUS.PENDING,
+    "status.matching": deleteField(),
+    crops: [],
+    matches: [],
+    hasDetection: FALSE,
+    hasMatching: FALSE
   }
-  if (matching === STEP_STATUS.FAILED) {
-    patch["status.matching"] = STEP_STATUS.PENDING
-    nextStatus.matching = STEP_STATUS.PENDING
-  }
 
-  if (!patch["status.detection"] && !patch["status.matching"]) return
-
-  setLoader(`scenes.retry.${id}`)
+  const loaderPath = `scenes.step.detection.${id}`
+  setLoader(loaderPath)
   try {
     await updateDoc(getDocRef("scenes", id), patch)
     void wakeTicker()
     sceneActions.update(id, (current = {}) => ({
       ...current,
       status: nextStatus,
-      updatedAt: patch.updatedAt
+      crops: [],
+      matches: [],
+      updatedAt
     }))
     sceneAppActions.update("list", (list = EMPTY_ARRAY) =>
-      list.map((item) => item.id === id ? { ...item, status: nextStatus, updatedAt: patch.updatedAt } : item)
+      list.map((item) => {
+        if (item.id !== id) return item
+        return { ...item, status: nextStatus, crops: [], matches: [], updatedAt }
+      })
     )
   } catch (error) {
     showBanner("error", error.message || i18n.t("could_not_retry_analysis"))
   } finally {
-    clearLoader(`scenes.retry.${id}`)
+    clearLoader(loaderPath)
   }
 }
 
-export const sceneMatchingComplete = (status) =>
-  normalizeSceneStatus(status).matching === STEP_STATUS.COMPLETED
+export const requestCropMatch = async (scene, cropId) => {
+  const { id, crops, matches, status } = scene || {}
+  if (!id || !cropId) return
 
-export const sceneMatchingProcessing = (status) =>
-  normalizeSceneStatus(status).matching === STEP_STATUS.PROCESSING
+  const cropList = crops || []
+  const crop = _.find(cropList, { id: cropId })
+  if (!crop) return
+
+  const updatedAt = Date.now()
+  const nextCrops = _.map(cropList, (item) => {
+    if (item.id !== cropId) return item
+    return { ...item, status: STEP_STATUS.PENDING }
+  })
+  const nextMatches = _.filter(matches || [], (item) => item.cropId !== cropId)
+  const nextStatus = {
+    ...(status || {}),
+    matching: STEP_STATUS.PENDING
+  }
+  const patch = {
+    updatedAt,
+    crops: nextCrops,
+    matches: nextMatches,
+    "status.matching": STEP_STATUS.PENDING
+  }
+
+  const loaderPath = `scenes.crop.${id}.${cropId}`
+  setLoader(loaderPath)
+  try {
+    await updateDoc(getDocRef("scenes", id), patch)
+    void wakeTicker()
+    sceneActions.update(id, (current = {}) => ({
+      ...current,
+      status: nextStatus,
+      crops: nextCrops,
+      matches: nextMatches,
+      updatedAt
+    }))
+    sceneAppActions.update("list", (list = EMPTY_ARRAY) =>
+      list.map((item) => {
+        if (item.id !== id) return item
+        return { ...item, status: nextStatus, crops: nextCrops, matches: nextMatches, updatedAt }
+      })
+    )
+  } catch (error) {
+    showBanner("error", error.message || i18n.t("could_not_retry_analysis"))
+  } finally {
+    clearLoader(loaderPath)
+  }
+}
+
+export const retryScene = async (scene) => {
+  await requestSceneStep(scene, "detection")
+}
+
+export const cropMatchingStatus = (crop) => (crop || {}).status || null
 
 export const sceneStatusTone = (status) => {
   if (sceneIsFailed(status)) return "failed"
   if (sceneIsProcessing(status)) return "processing"
-  if (sceneMatchingComplete(status)) return "complete"
+  const { detection } = status || {}
+  if (detection === STEP_STATUS.COMPLETED) return "complete"
   return "pending"
 }
 

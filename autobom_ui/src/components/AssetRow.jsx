@@ -1,5 +1,5 @@
 import { ActionIcon, Loader, Tooltip } from "@mantine/core"
-import { IconBox, IconDownload, IconFileZip, IconPlus, IconRefresh } from "@tabler/icons-react"
+import { IconBox, IconDownload, IconFileZip, IconPlayerPlay, IconPlus, IconRefresh } from "@tabler/icons-react"
 import {
   getProductAssetView,
   importProductBundle,
@@ -20,6 +20,11 @@ const CONFIRM_KEYS = {
   colada: "reprocess_this_colada"
 }
 
+const GENERATE_LABELS = {
+  glb: "generate_glb",
+  colada: "generate_colada"
+}
+
 export default function AssetRow({
   product,
   kind,
@@ -29,7 +34,7 @@ export default function AssetRow({
 }) {
   const { t } = useTranslation()
   const view = getProductAssetView(product, kind)
-  const { id, available, processing, waiting, failed, statusKey } = view || {}
+  const { id, available, processing, waiting, failed, statusKey, hasGlb } = view || {}
   const KindIcon = KIND_ICONS[kind]
   const generating = processing || waiting
 
@@ -40,6 +45,9 @@ export default function AssetRow({
   const busy = importing || deleting
   const glbBlocked = kind === "glb" && inSketchup && !glbSupported
   const canAction = available && !busy && !glbBlocked
+  const needsGlb = kind === "colada" && !hasGlb
+  const canRequest = !generating && !busy && !needsGlb
+  const showRefresh = available || failed
   const { statusClass, dotClass, avatarClass } = materialStatusTone({
     ready: available,
     generating,
@@ -53,6 +61,11 @@ export default function AssetRow({
   if (inSketchup && kind === "colada") actionTitle = t("insert_collada_model")
   if (glbBlocked) actionTitle = t("glb_requires_sketchup_2025")
 
+  let requestTitle = t(GENERATE_LABELS[kind])
+  if (failed) requestTitle = t("retry")
+  if (available) requestTitle = t("reprocess")
+  if (needsGlb) requestTitle = t("colada_requires_glb")
+
   const onAction = () => {
     if (kind === "glb") {
       void importProductGlb(view)
@@ -61,8 +74,8 @@ export default function AssetRow({
     void importProductBundle(view)
   }
 
-  const onReprocess = () => {
-    if (!window.confirm(t(CONFIRM_KEYS[kind]))) return
+  const onRequest = () => {
+    if (available && !window.confirm(t(CONFIRM_KEYS[kind]))) return
     void reprocessProductAsset(view, kind)
   }
 
@@ -96,7 +109,7 @@ export default function AssetRow({
             <span className="truncate">{t(statusKey)}</span>
           </p>
         </div>
-        {(available || failed) &&
+        {!generating &&
           <div className="flex shrink-0 items-center">
             {available &&
               <Tooltip label={actionTitle}>
@@ -121,19 +134,24 @@ export default function AssetRow({
                 </span>
               </Tooltip>
             }
-            <Tooltip label={t("reprocess")}>
+            <Tooltip label={requestTitle}>
               <span>
                 <ActionIcon
                   variant="subtle"
                   color="gray"
                   size="lg"
                   radius="xl"
-                  aria-label={t("reprocess")}
-                  disabled={busy}
+                  aria-label={requestTitle}
+                  disabled={!canRequest}
                   loading={deleting}
-                  onClick={onReprocess}
+                  onClick={onRequest}
                 >
-                  <IconRefresh size={18} stroke={1.75} />
+                  {showRefresh &&
+                    <IconRefresh size={18} stroke={1.75} />
+                  }
+                  {!showRefresh &&
+                    <IconPlayerPlay size={18} stroke={1.75} />
+                  }
                 </ActionIcon>
               </span>
             </Tooltip>

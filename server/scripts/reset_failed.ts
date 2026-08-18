@@ -8,7 +8,7 @@ import { wake } from "../lib/wake"
 
 const PAGE_SIZE = 100
 
-const PRODUCT_STEPS = ["image", "text", "embedding", "trellis", "colada"] as const
+const PRODUCT_STEPS = ["analysis", "image", "text", "embedding", "trellis", "colada"] as const
 const SCENE_STEPS = ["detection", "matching"] as const
 
 type TCollectionConfig = {

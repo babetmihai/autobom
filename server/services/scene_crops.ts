@@ -2,7 +2,6 @@ import axios from "axios"
 import cleanDeep from "clean-deep"
 import { SCENE_ANALYZER_URL, TRUE } from "../lib"
 import { PRODUCT_TAGS } from "../lib/products"
-import { STEP_STATUS } from "../lib/status"
 import { claimNext, completeStep, failStep, findOwnProcessing } from "../lib/claim"
 import { uploadFile } from "../lib/storage"
 
@@ -72,12 +71,7 @@ const run = async () => {
       crops: storedCrops,
       imageWidth: detection.width,
       imageHeight: detection.height,
-      hasDetection: TRUE,
-      ...(storedCrops.length === 0 && {
-        matches: [],
-        hasMatching: TRUE,
-        "status.matching": STEP_STATUS.COMPLETED
-      })
+      hasDetection: TRUE
     }))
 
     console.log("----> Scene crop detection completed for scene:", id)

@@ -2,7 +2,7 @@ import React from "react"
 import { Link, useParams } from "react-router-dom"
 import { useSelector } from "react-redux"
 import { ActionIcon, Anchor, Tooltip } from "@mantine/core"
-import { IconChevronLeft, IconRefresh } from "@tabler/icons-react"
+import { IconChevronLeft, IconPlayerPlay, IconRefresh } from "@tabler/icons-react"
 import { SceneAnalyzerHeader } from "../components/SceneAnalyzerHeader"
 import { AppShell } from "../components/AppShell.jsx"
 import SceneUpload from "../components/scene/SceneUpload.jsx"
@@ -11,15 +11,13 @@ import SceneNameField from "../components/scene/SceneNameField.jsx"
 import SceneViewer from "../components/scene/SceneViewer.jsx"
 import CropCard from "../components/scene/CropCard.jsx"
 import {
-  retryScene,
+  requestSceneStep,
   selectActiveScene,
   selectActiveSceneId,
   selectCropsWithMatches,
   selectSceneMatchProductsById,
   sceneIsFailed,
   sceneIsProcessing,
-  sceneIsQueued,
-  sceneMatchingComplete,
   sceneStatusLabel,
   setActiveSceneId,
   useSceneListener
@@ -27,7 +25,7 @@ import {
 import { useImportListener } from "../lib/products.js"
 import { useTagListener } from "../lib/tags.js"
 import { useLoader } from "../lib/loaders.js"
-import { cn, materialCardClass, materialStatusTone } from "../lib/index.js"
+import { cn, materialCardClass, materialStatusTone, STEP_STATUS } from "../lib/index.js"
 import { glbNativeImport, isInSketchup, useSketchupEnvListener } from "../lib/sketchup.js"
 import { useTranslation } from "react-i18next"
 
@@ -77,17 +75,31 @@ export default function SceneAnalyzerPage() {
     }
   }, [crops, selectedCropId])
 
-  const queued = scene && sceneIsQueued(status)
   const processing = scene && sceneIsProcessing(status)
   const failed = scene && sceneIsFailed(status)
-  const analysisComplete = scene && sceneMatchingComplete(status)
+  const { detection } = status || {}
+  const detectionComplete = detection === STEP_STATUS.COMPLETED
+  const detectionFailed = detection === STEP_STATUS.FAILED
   const hasCrops = cropsWithMatches.length > 0
-  const retrying = useLoader(sceneId ? `scenes.retry.${sceneId}` : "")
+  const detecting = useLoader(sceneId ? `scenes.step.detection.${sceneId}` : "")
   const { statusClass, dotClass } = materialStatusTone({
-    ready: Boolean(scene) && !processing && !failed && !queued,
+    ready: Boolean(scene) && !processing && !failed,
     generating: Boolean(processing),
     failed: Boolean(failed)
   })
+
+  const canDetect = !processing
+
+  let detectTitle = t("detect_furniture")
+  if (detectionFailed) detectTitle = t("retry")
+  if (detectionComplete) detectTitle = t("reprocess")
+
+  const showDetectRefresh = detectionComplete || detectionFailed
+
+  const onDetect = () => {
+    if (hasCrops && !window.confirm(t("reprocess_this_detection"))) return
+    void requestSceneStep(scene, "detection")
+  }
 
   return (
     <AppShell header={<SceneAnalyzerHeader />}>
@@ -128,21 +140,31 @@ export default function SceneAnalyzerPage() {
                 <span className="truncate">{sceneStatusLabel(status)}</span>
               </p>
             </div>
-            {failed &&
-              <Tooltip label={t("retry")}>
-                <ActionIcon
-                  variant="subtle"
-                  color="gray"
-                  size="lg"
-                  radius="xl"
-                  aria-label={t("retry")}
-                  loading={retrying}
-                  onClick={() => void retryScene(scene)}
-                >
-                  <IconRefresh size={18} stroke={1.75} />
-                </ActionIcon>
-              </Tooltip>
-            }
+            <div className="flex shrink-0 items-center">
+              {!processing &&
+                <Tooltip label={detectTitle}>
+                  <span>
+                    <ActionIcon
+                      variant="subtle"
+                      color="gray"
+                      size="lg"
+                      radius="xl"
+                      aria-label={detectTitle}
+                      disabled={!canDetect}
+                      loading={detecting}
+                      onClick={onDetect}
+                    >
+                      {showDetectRefresh &&
+                        <IconRefresh size={18} stroke={1.75} />
+                      }
+                      {!showDetectRefresh &&
+                        <IconPlayerPlay size={18} stroke={1.75} />
+                      }
+                    </ActionIcon>
+                  </span>
+                </Tooltip>
+              }
+            </div>
           </div>
         </article>
       }
@@ -173,7 +195,7 @@ export default function SceneAnalyzerPage() {
                 productsById={productsById}
                 selected={crop.id === selectedCropId}
                 onSelect={setSelectedCropId}
-                sceneStatus={status}
+                scene={scene}
                 sceneId={sceneId}
                 inSketchup={inSketchup}
                 glbSupported={glbSupported}
@@ -187,7 +209,7 @@ export default function SceneAnalyzerPage() {
         <p className="m-0 text-sm text-gray-500">{t("scanning_scene")}</p>
       }
 
-      {scene && !hasCrops && analysisComplete && !failed &&
+      {scene && !hasCrops && detectionComplete && !failed && !processing &&
         <div className={cn(materialCardClass({ ready: false }), "py-10 text-center")}>
           <p className="m-0 text-sm font-medium text-gray-700">{t("no_furniture_detected")}</p>
           <p className="m-0 mt-1 text-xs text-gray-500">{t("try_clearer_photo")}</p>

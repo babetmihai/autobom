@@ -223,6 +223,23 @@ export const getProductAssetView = (product, kind) => {
   }
 }
 
+const PIPELINE_STEPS = ["scrape", "analysis", "trellis", "colada"]
+const ANALYSIS_STEPS = ["analysis", "image", "text", "embedding"]
+
+const resolveAnalysisStep = (status) => {
+  const { analysis, image, text, embedding } = status || {}
+  if (analysis) return analysis
+  const legacyComplete = image === STEP_STATUS.COMPLETED
+    && text === STEP_STATUS.COMPLETED
+    && embedding === STEP_STATUS.COMPLETED
+  if (legacyComplete) return STEP_STATUS.COMPLETED
+  const legacyFailed = image === STEP_STATUS.FAILED
+    || text === STEP_STATUS.FAILED
+    || embedding === STEP_STATUS.FAILED
+  if (legacyFailed) return STEP_STATUS.FAILED
+  return null
+}
+
 const analysisFieldStatus = (stepStatus, hasValue) => {
   const processing = stepStatus === STEP_STATUS.PROCESSING
   const waiting = stepStatus === STEP_STATUS.PENDING
@@ -241,36 +258,30 @@ export const getProductAnalysisView = (product) => {
   if (!view) return null
 
   const { color, dimensions, tags, status } = view || {}
-  const { image, text } = status || {}
+  const analysisStep = resolveAnalysisStep(status)
   const activeTags = getActiveTags(tags)
   const dimensionsDisplay = formatDimensions(dimensions)
-  const imageBusy = image === STEP_STATUS.PENDING || image === STEP_STATUS.PROCESSING
-  const textBusy = text === STEP_STATUS.PENDING || text === STEP_STATUS.PROCESSING
-
-  let tagsStep = STEP_STATUS.COMPLETED
-  if (image === STEP_STATUS.PROCESSING || text === STEP_STATUS.PROCESSING) {
-    tagsStep = STEP_STATUS.PROCESSING
-  } else if (imageBusy || textBusy) {
-    tagsStep = STEP_STATUS.PENDING
-  } else if (!activeTags.length && (image === STEP_STATUS.FAILED || text === STEP_STATUS.FAILED)) {
-    tagsStep = STEP_STATUS.FAILED
-  }
+  const generating = analysisStep === STEP_STATUS.PENDING || analysisStep === STEP_STATUS.PROCESSING
+  const failed = analysisStep === STEP_STATUS.FAILED
+  const completed = analysisStep === STEP_STATUS.COMPLETED
 
   return {
     color: {
       value: color || null,
       hex: colorToHex(color),
-      ...analysisFieldStatus(image, Boolean(color))
+      ...analysisFieldStatus(analysisStep, Boolean(color))
     },
     dimensions: {
       display: dimensionsDisplay,
-      ...analysisFieldStatus(text, Boolean(dimensionsDisplay))
+      ...analysisFieldStatus(analysisStep, Boolean(dimensionsDisplay))
     },
     tags: {
       value: activeTags,
-      ...analysisFieldStatus(tagsStep, activeTags.length > 0)
+      ...analysisFieldStatus(analysisStep, activeTags.length > 0)
     },
-    canRetry: image === STEP_STATUS.FAILED || text === STEP_STATUS.FAILED
+    generating,
+    canRetry: failed,
+    canReanalyze: completed
   }
 }
 
@@ -399,12 +410,17 @@ export const isScrapePending = (product) => {
 
 export const hasFailedSteps = (product) => {
   const { status } = product || {}
-  return _.some(status, (value) => value === STEP_STATUS.FAILED)
+  if (_.some(PIPELINE_STEPS, (step) => (status || {})[step] === STEP_STATUS.FAILED)) return true
+  if ((status || {}).analysis) return false
+  return _.some(["image", "text", "embedding"], (step) => (status || {})[step] === STEP_STATUS.FAILED)
 }
 
 export const isProductProcessing = (product) => {
   const { status } = product || {}
-  return _.some(status, (value) => value === STEP_STATUS.PENDING || value === STEP_STATUS.PROCESSING)
+  return _.some(PIPELINE_STEPS, (step) => {
+    const value = (status || {})[step]
+    return value === STEP_STATUS.PENDING || value === STEP_STATUS.PROCESSING
+  })
 }
 
 export const getProductPipelineView = (product) => {
@@ -426,11 +442,15 @@ export const retryProduct = async (product) => {
   const failedSteps = _.keys(status || {}).filter((key) => status[key] === STEP_STATUS.FAILED)
   if (!failedSteps.length) return
 
+  const analysisFailed = _.some(ANALYSIS_STEPS, (step) => _.includes(failedSteps, step))
+  const retrySteps = _.filter(failedSteps, (step) => !_.includes(ANALYSIS_STEPS, step) || step === "analysis")
+  if (analysisFailed && !_.includes(retrySteps, "analysis")) retrySteps.push("analysis")
+
   const patch = { updatedAt: Date.now() }
-  _.forEach(failedSteps, (step) => {
+  _.forEach(retrySteps, (step) => {
     patch[`status.${step}`] = STEP_STATUS.PENDING
   })
-  const retryingTrellis = _.includes(failedSteps, "trellis")
+  const retryingTrellis = _.includes(retrySteps, "trellis")
   if (retryingTrellis) patch.trellisRequestId = deleteField()
 
   await updateDoc(getDocRef("products", id), patch)
@@ -439,7 +459,7 @@ export const retryProduct = async (product) => {
   actions.update("products", (products = {}) => {
     const current = products[id] || { id }
     const nextStatus = { ...(current.status || {}) }
-    _.forEach(failedSteps, (step) => {
+    _.forEach(retrySteps, (step) => {
       nextStatus[step] = STEP_STATUS.PENDING
     })
     const next = {
@@ -463,21 +483,23 @@ export const reprocessProduct = async (product) => {
 
   const nextStatus = {
     ...(status || {}),
-    image: STEP_STATUS.PENDING,
-    text: STEP_STATUS.PENDING,
-    embedding: STEP_STATUS.PENDING
+    analysis: STEP_STATUS.PENDING
   }
+  delete nextStatus.image
+  delete nextStatus.text
+  delete nextStatus.embedding
   const patch = {
     updatedAt: Date.now(),
-    "status.image": STEP_STATUS.PENDING,
-    "status.text": STEP_STATUS.PENDING,
-    "status.embedding": STEP_STATUS.PENDING,
+    "status.analysis": STEP_STATUS.PENDING,
+    "status.image": deleteField(),
+    "status.text": deleteField(),
+    "status.embedding": deleteField(),
     tags: deleteField(),
     color: deleteField(),
     dimensions: deleteField(),
     embedding: deleteField()
   }
-  const analysisLocked = lockedStep === "image" || lockedStep === "text" || lockedStep === "embedding"
+  const analysisLocked = _.includes(ANALYSIS_STEPS, lockedStep)
   if (analysisLocked) {
     patch.lockedBy = deleteField()
     patch.lockedAt = deleteField()
@@ -528,9 +550,9 @@ export const reprocessProductAsset = async (product, kind) => {
     patch.hasBundle = deleteField()
     patch.modelBundleUrl = deleteField()
     patch["status.trellis"] = STEP_STATUS.PENDING
-    patch["status.colada"] = STEP_STATUS.PENDING
+    patch["status.colada"] = deleteField()
     nextStatus.trellis = STEP_STATUS.PENDING
-    nextStatus.colada = STEP_STATUS.PENDING
+    delete nextStatus.colada
   }
   if (kind === "colada") {
     patch.hasBundle = deleteField()
@@ -661,10 +683,13 @@ export const updateProduct = async (id, values, imageFile) => {
   }
   if (imageFile) {
     patch.imageUrl = await uploadProductImage(id, imageFile)
-    patch["status.image"] = STEP_STATUS.PENDING
-    patch["status.embedding"] = STEP_STATUS.PENDING
-    patch["status.trellis"] = STEP_STATUS.PENDING
-    patch["status.colada"] = STEP_STATUS.PENDING
+    patch.tags = deleteField()
+    patch.color = deleteField()
+    patch.dimensions = deleteField()
+    patch.embedding = deleteField()
+    patch["status.analysis"] = deleteField()
+    patch["status.trellis"] = deleteField()
+    patch["status.colada"] = deleteField()
     patch.trellisRequestId = deleteField()
     patch.hasGlb = deleteField()
     patch.hasBundle = deleteField()
@@ -672,7 +697,6 @@ export const updateProduct = async (id, values, imageFile) => {
     patch.modelBundleUrl = deleteField()
   }
   await updateDoc(getDocRef("products", id), patch)
-  if (imageFile) void wakeTicker()
 
   actions.update("products", (products = {}) => {
     const current = products[id] || { id }
@@ -684,19 +708,20 @@ export const updateProduct = async (id, values, imageFile) => {
     }
     if (imageFile) {
       next.imageUrl = patch.imageUrl
-      next.status = {
-        ...(current.status || {}),
-        image: STEP_STATUS.PENDING,
-        embedding: STEP_STATUS.PENDING,
-        trellis: STEP_STATUS.PENDING,
-        colada: STEP_STATUS.PENDING
-      }
+      next.status = { ...(current.status || {}) }
+      delete next.status.analysis
+      delete next.status.trellis
+      delete next.status.colada
+      next.tags = null
+      next.color = null
+      next.dimensions = null
       next.hasGlb = false
       next.hasBundle = false
       next.glbUrl = null
       next.bundleUrl = null
       next.hasModel = false
       next.download_url = null
+      delete next.embedding
       delete next.trellisRequestId
     }
     return {

@@ -9,9 +9,7 @@ const ROOT = path.join(__dirname, "..")
 
 const DOCKER_BY_SERVICE = {
   product_scraper: ["text_analyzer"],
-  text_analyzer: ["text_analyzer"],
-  image_analyzer: ["image_analyzer"],
-  embedding_index: ["embedding_analyzer"],
+  product_analyzer: ["image_analyzer", "text_analyzer", "embedding_analyzer"],
   scene_embeddings: ["embedding_analyzer"],
   scene_crops: ["scene_analyzer"],
   trellis_converter: ["trellis"],

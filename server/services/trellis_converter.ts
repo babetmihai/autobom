@@ -52,11 +52,8 @@ const run = async () => {
     const product = await claimNext({
       collection: "products",
       step: STEP,
-      listQuery: {
-        "status.image": STEP_STATUS.COMPLETED,
-        "status.text": STEP_STATUS.COMPLETED
-      },
-      pageSize: 1
+      pageSize: 1,
+      ready: (item) => Boolean(item.imageUrl)
     })
 
     if (!product) {
