@@ -60,6 +60,7 @@ function ColorModal({ productId, onClose = hideModal }) {
       name={t("edit_color")}
       onClose={onClose}
       className="max-w-[28rem]"
+      contentClassName="overflow-visible"
       footer={
         <Group justify="flex-end" gap="xs">
           <Button variant="default" disabled={busy} onClick={onClose}>
@@ -76,7 +77,7 @@ function ColorModal({ productId, onClose = hideModal }) {
         </Group>
       }
     >
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2.5 overflow-visible p-1.5">
         {_.map(PRODUCT_COLORS, (hex, name) => {
           const selected = values.color === name
           return (

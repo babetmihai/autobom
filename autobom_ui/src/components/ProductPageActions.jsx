@@ -37,7 +37,7 @@ export default function ProductPageActions({
   if (glbBlocked) insertTitle = t("glb_requires_sketchup_2025")
 
   const onReprocess = async () => {
-    if (!window.confirm(t("reprocess_this_product"))) return
+    if (!window.confirm(t("reanalyze_this_product"))) return
     try {
       await reprocessProduct(view)
     } catch (error) {
@@ -80,14 +80,14 @@ export default function ProductPageActions({
           </ActionIcon>
         </span>
       </Tooltip>
-      <Tooltip label={t("reprocess")}>
+      <Tooltip label={t("reanalyze")}>
         <span>
           <ActionIcon
             variant="subtle"
             color="gray"
             size="lg"
             radius="xl"
-            aria-label={t("reprocess")}
+            aria-label={t("reanalyze")}
             disabled={busy}
             onClick={() => void onReprocess()}
           >

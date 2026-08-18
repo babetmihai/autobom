@@ -464,17 +464,20 @@ export const reprocessProduct = async (product) => {
   const nextStatus = {
     ...(status || {}),
     image: STEP_STATUS.PENDING,
-    text: STEP_STATUS.PENDING
+    text: STEP_STATUS.PENDING,
+    embedding: STEP_STATUS.PENDING
   }
   const patch = {
     updatedAt: Date.now(),
     "status.image": STEP_STATUS.PENDING,
     "status.text": STEP_STATUS.PENDING,
+    "status.embedding": STEP_STATUS.PENDING,
     tags: deleteField(),
     color: deleteField(),
-    dimensions: deleteField()
+    dimensions: deleteField(),
+    embedding: deleteField()
   }
-  const analysisLocked = lockedStep === "image" || lockedStep === "text"
+  const analysisLocked = lockedStep === "image" || lockedStep === "text" || lockedStep === "embedding"
   if (analysisLocked) {
     patch.lockedBy = deleteField()
     patch.lockedAt = deleteField()
@@ -494,6 +497,7 @@ export const reprocessProduct = async (product) => {
       color: null,
       dimensions: null
     }
+    delete next.embedding
     if (analysisLocked) {
       delete next.lockedBy
       delete next.lockedAt
